@@ -1,0 +1,22 @@
+{
+  "name": "bookmarks-to-obsidian",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Import Chrome bookmarks into an Obsidian vault as clean, Web-Clipper-parity markdown notes.",
+  "bin": {
+    "bookmarks-to-obsidian": "./import.mjs"
+  },
+  "scripts": {
+    "import": "node import.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "defuddle": "^0.6.0",
+    "jsdom": "^24.1.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.0"
+  }
+}

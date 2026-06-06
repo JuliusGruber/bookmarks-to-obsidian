@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Harness engineering for coding agent users</title>
+  <meta name="author" content="Birgitta Böckeler">
+  <meta name="description" content="A mental model for building trust in coding agents.">
+  <meta property="og:title" content="Harness engineering for coding agent users">
+  <meta property="og:description" content="A mental model for building trust in coding agents.">
+  <meta property="article:published_time" content="2026-04-02T10:00:00Z">
+  <link rel="canonical" href="https://martinfowler.com/articles/harness-engineering.html">
+</head>
+<body>
+  <header><nav><a href="/">Home</a> <a href="/articles">Articles</a></nav></header>
+  <article>
+    <h1>Harness engineering for coding agent users</h1>
+    <p>When people first start working with coding agents, they tend to treat the
+       model as either an oracle or a toy. Neither framing survives contact with a
+       real codebase. The more useful stance is to think of yourself as an engineer
+       building a harness around an unreliable but capable component.</p>
+    <p>A harness is the scaffolding that makes an unpredictable engine safe to run.
+       In automotive testing, a harness holds the engine, feeds it controlled inputs,
+       and measures every output. Applied to coding agents, the harness is everything
+       around the model: the prompts, the tools, the tests, the review gates, and the
+       feedback loops that turn a probabilistic generator into a dependable teammate.</p>
+    <p>The first principle is observability. You cannot trust what you cannot see, so
+       every agent action should leave a trace you can inspect later. The second
+       principle is reversibility: prefer actions that are easy to undo, and make
+       destructive steps require explicit confirmation. The third principle is
+       verification, which means never accepting a claim of success without evidence.</p>
+    <p>Trust is not granted once; it is accumulated through repeated, observable wins.
+       Start the agent on low-stakes tasks where mistakes are cheap, watch how it
+       behaves under pressure, and widen its autonomy only as it earns it. This is the
+       same way you would onboard a junior engineer, except the feedback loop is faster
+       and the failure modes are stranger.</p>
+    <p>The payoff of harness engineering is leverage. A well-built harness lets one
+       person supervise many agents at once, because the scaffolding catches the
+       routine errors before a human ever sees them. The work shifts from writing every
+       line to designing the system that writes and checks the lines for you.</p>
+  </article>
+  <footer><p>Copyright 2026. Subscribe to our newsletter for more.</p></footer>
+</body>
+</html>
