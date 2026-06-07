@@ -1133,7 +1133,7 @@ git commit -m "feat(import): render+pick-better+fetch fallback, harvest images, 
 - Modify: `SKILL.md`
 - Modify: `README.md`
 
-- [ ] **Step 1: Update `SKILL.md` Overview**
+- [x] **Step 1: Update `SKILL.md` Overview**
 
 Replace the Overview paragraph (lines 8-14) with:
 
@@ -1151,7 +1151,7 @@ deterministic Node CLI; this skill is the thin operator that health-checks, runs
 it, and summarizes the JSON report.
 ```
 
-- [ ] **Step 2: Document rendering + images + flags in `SKILL.md`**
+- [x] **Step 2: Document rendering + images + flags in `SKILL.md`**
 
 After the `## Defaults (this machine)` list (~line 26), insert:
 
@@ -1181,7 +1181,7 @@ After the `## Defaults (this machine)` list (~line 26), insert:
   verify the downloaded-image experience.
 ```
 
-- [ ] **Step 3: Update the `## Flags` list in `SKILL.md`**
+- [x] **Step 3: Update the `## Flags` list in `SKILL.md`**
 
 Replace the Flags paragraph (lines 56-59) with:
 
@@ -1192,7 +1192,7 @@ Replace the Flags paragraph (lines 56-59) with:
 `--help` for the full list.
 ```
 
-- [ ] **Step 4: Add a report-status note in `SKILL.md`**
+- [x] **Step 4: Add a report-status note in `SKILL.md`**
 
 In `## Report statuses`, after the table, add:
 
@@ -1204,7 +1204,7 @@ downloaded vs. left remote — surface this in your summary (e.g. "42 imported
 (40 rendered, 2 fetch-fallback), 130 images saved, 4 left remote").
 ```
 
-- [ ] **Step 5: Mirror the changes into `README.md`**
+- [x] **Step 5: Mirror the changes into `README.md`**
 
 Replace the description (lines 3-4):
 
@@ -1228,7 +1228,7 @@ If `node_modules/` is missing (e.g.
 after copying the skill to a new machine), re-run `npm install` from this directory.
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add SKILL.md README.md
