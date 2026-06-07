@@ -23,6 +23,9 @@ import {
   writeManifest,
 } from './src/dedup.mjs';
 import { buildReport } from './src/report.mjs';
+import { connectBrowser, renderPage } from './src/render.mjs';
+import { downloadImages } from './src/images.mjs';
+import { looksLikeShell } from './src/shell.mjs';
 
 const HELP = `bookmarks-to-obsidian — import Chrome bookmarks into an Obsidian vault.
 
@@ -38,6 +41,10 @@ Options:
   --retry-failed         Re-attempt manifest entries marked failed or skipped-thin.
   --min-words <N>        Word-count floor for the thin-content gate (default: 200).
   --concurrency <N>      Parallel fetches (default: 4).
+  --no-render            Skip Chrome rendering; use the raw-fetch path only.
+  --cdp-url <url>        Chrome CDP endpoint for rendering (default: http://localhost:9222).
+  --render-concurrency <N>  Parallel render tabs (default: 3).
+  --no-dismiss-consent   Do not auto-click cookie/consent accept buttons (default: on).
   --rpc-url <url>        Gateway RPC URL (default: http://localhost:3000/rpc).
   --gateway <url>        Gateway base URL for health check (default: http://localhost:3000).
   -h, --help             Show this help.
@@ -54,6 +61,10 @@ function parseArgs(argv) {
     retryFailed: false,
     minWords: 200,
     concurrency: 4,
+    render: true,
+    cdpUrl: 'http://localhost:9222',
+    renderConcurrency: 3,
+    dismissConsent: true,
     rpcUrl: 'http://localhost:3000/rpc',
     gateway: 'http://localhost:3000',
     help: false,
@@ -72,6 +83,10 @@ function parseArgs(argv) {
       case '--concurrency': opts.concurrency = Math.max(1, Number(next())); break;
       case '--rpc-url': opts.rpcUrl = next(); break;
       case '--gateway': opts.gateway = next(); break;
+      case '--no-render': opts.render = false; break;
+      case '--cdp-url': opts.cdpUrl = next(); break;
+      case '--render-concurrency': opts.renderConcurrency = Math.max(1, Number(next())); break;
+      case '--no-dismiss-consent': opts.dismissConsent = false; break;
       case '-h': case '--help': opts.help = true; break;
       default:
         throw new Error(`Unknown argument: ${a}`);
@@ -118,6 +133,7 @@ async function main() {
 
   const vaultAbs = isAbsolute(opts.vault) ? opts.vault : resolve(opts.vault);
   const inboxAbs = join(vaultAbs, opts.inbox);
+  const attachDir = join(inboxAbs, '_attachments');
   const manifestPath = join(inboxAbs, '.import-state.json');
   const created = todayISO();
 
@@ -177,63 +193,169 @@ async function main() {
   }
 
   // 5. Apply --limit; anything beyond it is reported, never silently dropped.
-  const within = toProcess.slice(0, opts.limit);
-  for (const { bm, slot } of toProcess.slice(opts.limit)) {
-    outcomes[slot] = { url: bm.url, title: bm.title, status: 'skipped-limit', reason: `beyond --limit ${opts.limit}` };
+  // Dry-run renders for an honest preview; without an explicit --limit, cap it.
+  const effectiveLimit = (opts.dryRun && !Number.isFinite(opts.limit)) ? 10 : opts.limit;
+  const within = toProcess.slice(0, effectiveLimit);
+  for (const { bm, slot } of toProcess.slice(effectiveLimit)) {
+    outcomes[slot] = { url: bm.url, title: bm.title, status: 'skipped-limit', reason: `beyond --limit ${effectiveLimit}` };
   }
 
   if (!opts.dryRun && within.length) await mkdir(inboxAbs, { recursive: true });
 
-  // 6. Fetch + extract + write, bounded by --concurrency.
-  await mapPool(within, opts.concurrency, async ({ bm, norm, slot }) => {
-    const fetched = await fetchPage(bm.url, { timeoutMs: 20000 });
-    if (fetched.status === 'failed') {
-      outcomes[slot] = { url: bm.url, title: bm.title, status: 'failed', reason: fetched.reason };
-      manifest[norm] = { bookmarkId: bm.id, status: 'failed', reason: fetched.reason, at: created };
-      return;
+  // Connect to the gateway Chrome for rendering. Failure → whole run uses fetch.
+  let browser = null;
+  if (opts.render && within.length) {
+    try {
+      browser = await connectBrowser(opts.cdpUrl);
+    } catch (e) {
+      process.stderr.write(`render disabled: cannot connect to ${opts.cdpUrl} (${e.message})\n`);
     }
-    if (fetched.status === 'skipped-binary') {
-      outcomes[slot] = { url: bm.url, title: bm.title, status: 'skipped-binary', reason: fetched.reason };
-      manifest[norm] = { bookmarkId: bm.id, status: 'skipped-binary', reason: fetched.reason, at: created };
-      return;
-    }
+  }
 
-    const ex = await extractFromHtml(fetched.html, bm.url, { minWords: opts.minWords });
-    if (ex.status !== 'ok') {
-      const reason = `wordCount ${ex.wordCount} < ${opts.minWords}`;
-      outcomes[slot] = { url: bm.url, title: bm.title, status: 'skipped-thin', reason };
-      manifest[norm] = { bookmarkId: bm.id, status: 'skipped-thin', reason, at: created };
-      return;
-    }
+  // Seed attachment names from the existing _attachments/ so a later run never
+  // overwrites a prior note's image when two articles share a sanitized title.
+  const attachTaken = new Set();
+  if (!opts.dryRun) {
+    try { for (const n of await readdir(attachDir)) attachTaken.add(n); } catch { /* none yet */ }
+  }
 
-    const meta = ex.meta;
+  // 6. Render → pick-the-better-vs-fetch → harvest images → write.
+  const poolSize = browser ? opts.renderConcurrency : opts.concurrency;
+  let done = 0;
+
+  await mapPool(within, poolSize, async ({ bm, norm, slot }) => {
     let host = '';
     try { host = new URL(bm.url).host; } catch { /* keep '' */ }
-    const title = meta.title || bm.title || host || 'untitled';
-    const body = buildFrontmatter({
-      title,
-      source: bm.url,
-      authors: splitAuthors(meta.author),
-      published: normalizeDate(meta.published),
-      description: meta.description || '',
-      created,
-    }) + `\n${ex.content}\n`;
 
+    // --- 1. Render candidate (markdown + rendered-DOM metadata + captured bytes). ---
+    let rendered = null;   // { markdown, wordCount, meta, images, shell }
+    if (browser) {
+      const r = await renderPage(browser, bm.url, {
+        navTimeoutMs: 25000,
+        dismissConsent: opts.dismissConsent,
+      });
+      if (r.status === 'ok') {
+        const ex = await extractFromHtml(r.content, bm.url, { minWords: opts.minWords });
+        const md = ex.content || '';
+        rendered = {
+          markdown: md,
+          wordCount: ex.wordCount || 0,
+          meta: r,                 // rendered-DOM metadata (richer than the fragment re-parse)
+          images: r.images,        // Map<url,{bytes,contentType}> from the live page
+          shell: looksLikeShell(md, { minWords: opts.minWords }),
+        };
+      }
+      // render-failed → rendered stays null → fetch below.
+    }
+
+    const renderGood = rendered && rendered.wordCount >= opts.minWords && !rendered.shell;
+
+    // --- 2. Fetch candidate, only when the render isn't already good. ---
+    let fetched = null;       // { markdown, wordCount, meta, shell }
+    let fetchOutcome = null;  // terminal fetch status when there is no usable body
+    if (!renderGood) {
+      const f = await fetchPage(bm.url, { timeoutMs: 20000 });
+      if (f.status === 'ok') {
+        const ex = await extractFromHtml(f.html, bm.url, { minWords: opts.minWords });
+        const md = ex.content || '';
+        fetched = {
+          markdown: md,
+          wordCount: ex.wordCount || 0,
+          meta: ex.meta,
+          shell: looksLikeShell(md, { minWords: opts.minWords }),
+        };
+      } else {
+        fetchOutcome = f; // { status: 'failed' | 'skipped-binary', reason }
+      }
+    }
+
+    // --- 3. Pick the better: disqualify shell/thin, longest wins, render breaks ties. ---
+    const candidates = [];
+    if (rendered) candidates.push({ ...rendered, path: 'rendered' });
+    if (fetched) candidates.push({ ...fetched, path: 'fetched-fallback' });
+    const qualified = candidates.filter((c) => c.wordCount >= opts.minWords && !c.shell);
+    qualified.sort((a, b) => (b.wordCount - a.wordCount) || (a.path === 'rendered' ? -1 : 1));
+    const winner = qualified[0] || null;
+
+    if (!winner) {
+      // Nothing usable. Prefer a terminal fetch status (failed/binary) when we have
+      // one; otherwise report thin against whichever candidate we did get.
+      done += 1;
+      if (fetchOutcome && fetchOutcome.status === 'failed') {
+        outcomes[slot] = { url: bm.url, title: bm.title, status: 'failed', reason: fetchOutcome.reason, path: 'fetched-fallback' };
+        manifest[norm] = { bookmarkId: bm.id, status: 'failed', reason: fetchOutcome.reason, at: created };
+        process.stderr.write(`[${done}/${within.length}] failed  ${bm.title || host}\n`);
+        return;
+      }
+      if (fetchOutcome && fetchOutcome.status === 'skipped-binary') {
+        outcomes[slot] = { url: bm.url, title: bm.title, status: 'skipped-binary', reason: fetchOutcome.reason, path: 'fetched-fallback' };
+        manifest[norm] = { bookmarkId: bm.id, status: 'skipped-binary', reason: fetchOutcome.reason, at: created };
+        process.stderr.write(`[${done}/${within.length}] binary  ${bm.title || host}\n`);
+        return;
+      }
+      const wc = (rendered && rendered.wordCount) || (fetched && fetched.wordCount) || 0;
+      const reason = `wordCount ${wc} < ${opts.minWords}` + ((rendered && rendered.shell) || (fetched && fetched.shell) ? ' (shell)' : '');
+      const path = rendered ? 'rendered' : 'fetched-fallback';
+      outcomes[slot] = { url: bm.url, title: bm.title, status: 'skipped-thin', reason, path };
+      manifest[norm] = { bookmarkId: bm.id, status: 'skipped-thin', reason, at: created };
+      process.stderr.write(`[${done}/${within.length}] thin    ${bm.title || host}\n`);
+      return;
+    }
+
+    let markdown = winner.markdown;
+    const wordCount = winner.wordCount;
+    const metaSource = winner.meta;
+    const pathTaken = winner.path;
+    const capturedBytes = winner.path === 'rendered' ? winner.images : new Map();
+
+    // --- 4. Title + filename (disambiguated against existing notes). ---
+    const title = (metaSource && metaSource.title) || bm.title || host || 'untitled';
     const base = sanitizeFilename(title);
     const filename = uniqueFilename(base, '.md', (n) => existingNames.has(n));
     existingNames.add(filename);
 
+    // --- 5. Harvest images (real runs only). Slug = disambiguated filename so the
+    //        attachment names trace to THIS note and never collide cross-run. ---
+    let images = { downloaded: 0, remote: 0, dropped: 0 };
+    if (!opts.dryRun) {
+      images = await downloadImages(markdown, {
+        baseUrl: bm.url,
+        slug: filename.replace(/\.md$/i, ''),
+        attachDir,
+        capturedBytes,
+        takenNames: attachTaken,
+      });
+      markdown = images.markdown;
+    }
+
+    // --- 6. Assemble + write the note. ---
+    const body = buildFrontmatter({
+      title,
+      source: bm.url,
+      authors: splitAuthors(metaSource && metaSource.author),
+      published: normalizeDate(metaSource && metaSource.published),
+      description: (metaSource && metaSource.description) || '',
+      created,
+    }) + `\n${markdown}\n`;
+
     if (!opts.dryRun) await writeNoteFile(join(inboxAbs, filename), body);
+
+    done += 1;
     outcomes[slot] = {
       url: bm.url,
       title,
       status: 'imported',
       file: filename,
-      wordCount: ex.wordCount,
+      wordCount,
+      path: pathTaken,
+      images: { downloaded: images.downloaded, remote: images.remote, dropped: images.dropped },
       dryRun: opts.dryRun || undefined,
     };
     manifest[norm] = { bookmarkId: bm.id, status: 'imported', file: filename, at: created };
+    process.stderr.write(`[${done}/${within.length}] ${pathTaken === 'rendered' ? 'render ' : 'fetch  '} ${title}\n`);
   });
+
+  if (browser) { try { await browser.disconnect(); } catch { /* ignore */ } }
 
   // 7. Persist manifest (real runs only) and emit the report.
   if (!opts.dryRun) await writeManifest(manifestPath, manifest);
@@ -249,6 +371,13 @@ async function main() {
     minWords: opts.minWords,
     limit: Number.isFinite(opts.limit) ? opts.limit : null,
     retryFailed: opts.retryFailed,
+    render: {
+      enabled: Boolean(browser),
+      rendered: outcomes.filter((o) => o && o.path === 'rendered').length,
+      fetchedFallback: outcomes.filter((o) => o && o.path === 'fetched-fallback').length,
+      imagesDownloaded: outcomes.reduce((n, o) => n + ((o && o.images && o.images.downloaded) || 0), 0),
+      imagesRemote: outcomes.reduce((n, o) => n + ((o && o.images && o.images.remote) || 0), 0),
+    },
     generatedAt: created,
   };
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
