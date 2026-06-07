@@ -83,7 +83,7 @@ The existing `src/extract.mjs`, `src/frontmatter.mjs`, `src/note.mjs`, `src/dedu
 **Files:**
 - Modify: `package.json`
 
-- [ ] **Step 1: Add the two dependencies**
+- [x] **Step 1: Add the two dependencies**
 
 `defuddle` is already at `^0.18.1` and `jsdom` was already removed (spec rung 1, shipped 2026-06-07) — this step only **adds** `image-size` and `puppeteer-core`. Edit the `dependencies` block in `package.json` so it reads exactly:
 
@@ -95,12 +95,12 @@ The existing `src/extract.mjs`, `src/frontmatter.mjs`, `src/note.mjs`, `src/dedu
   },
 ```
 
-- [ ] **Step 2: Install**
+- [x] **Step 2: Install**
 
 Run: `npm install`
 Expected: completes without error; `node_modules/puppeteer-core` and `node_modules/image-size` exist. `puppeteer-core` does **not** download a browser (that is `puppeteer`, which we are not installing).
 
-- [ ] **Step 3: Verify the image-size v2 named API**
+- [x] **Step 3: Verify the image-size v2 named API**
 
 Create `_probe.mjs` at the skill root:
 
@@ -118,7 +118,7 @@ console.log('image-size:', d.width, d.height, d.type);   // expect 120 80 png
 Run (PowerShell): `node _probe.mjs ; Remove-Item _probe.mjs`
 Expected: `image-size: 120 80 png`. If the named import fails, the installed major is not 2.x — re-pin and adjust `images.mjs` imports before continuing.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add package.json package-lock.json
