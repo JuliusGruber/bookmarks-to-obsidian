@@ -8,10 +8,14 @@ description: Use when the user wants to import, sync, or pull their Chrome bookm
 ## Overview
 
 On-demand importer. Reads a Chrome bookmark folder via the local
-`chrome-bookmarks-gateway`, extracts each **new** article to clean markdown with
-Defuddle (the Obsidian Web Clipper's own engine), and writes Web-Clipper-parity
-notes into a vault inbox. The work is a deterministic Node CLI; this skill is the
-thin operator that health-checks, runs it, and summarizes the JSON report.
+`chrome-bookmarks-gateway`, **renders each new article in the gateway's Chrome
+over CDP** and runs Defuddle in the live page (the Obsidian Web Clipper's own
+engine + technique), **harvests the images the page already loaded**, and writes
+Web-Clipper-quality notes into a vault inbox. For each page it renders *and*, when
+the render looks thin or like a cookie/paywall shell, also raw-fetches and keeps
+the better of the two — so it never does worse than before. The work is a
+deterministic Node CLI; this skill is the thin operator that health-checks, runs
+it, and summarizes the JSON report.
 
 ## When to use
 
@@ -24,6 +28,30 @@ thin operator that health-checks, runs it, and summarizes the JSON report.
 - Vault: `C:\Users\juliu\Documents\AIEngineeringArticles`
 - Folder: `Mobile Lesezeichen/AI` (the iPad-reading home; ~197 links)
 - Destination: `Clippings/` inside the vault — the Obsidian Web Clipper's own folder (created on first import). Override with `--inbox <subpath>`.
+
+## Rendering & images
+
+- Rendering uses the **same dedicated Chrome the gateway already runs** (CDP on
+  `http://localhost:9222`) — no extra browser. Each article is opened in a fresh
+  tab, consent banners are dismissed (EN+DE, precision-targeted), the page is
+  rendered and extracted with in-page Defuddle, and the tab is closed. The
+  gateway's Chrome is left running (connect/disconnect only).
+- **Pick-the-better:** if the render is missing, below `--min-words`, or looks
+  like a consent/paywall/JS shell, the importer also raw-fetches and keeps the
+  better extraction. Each `imported` item reports `path`: `rendered` or
+  `fetched-fallback`.
+- **Images** are harvested from the render's own network responses (authenticated,
+  defeats hotlink/cookie/CORS); anything not captured is node-fetched, and
+  anything still unreachable keeps its remote URL (counted as `imagesRemote`).
+  They are saved to `Clippings/_attachments/` and referenced as Obsidian embeds
+  (`![[name]]`) so links survive when you move notes into `Articles/…`. Tracking
+  pixels (< 33px) are dropped.
+- A full backfill renders ~3 pages at a time; budget roughly **15–30 minutes for
+  ~200 links** (slower than the old fetch-only path). Per-item progress is printed
+  to **stderr**. `--dry-run` **does** render (capped to `--limit`, or 10 if no
+  limit) for an honest preview, but writes no notes and downloads no images — so
+  dry-run notes still show remote image URLs; do a small throwaway-inbox import to
+  verify the downloaded-image experience.
 
 ## Workflow
 
@@ -52,10 +80,17 @@ thin operator that health-checks, runs it, and summarizes the JSON report.
 | `failed` | fetch error (HTTP/DNS/timeout); retry with `--retry-failed` |
 | `skipped-limit` | a new bookmark held back by `--limit` this run |
 
+Each `imported` item also reports `path` (`rendered` or `fetched-fallback`) and an
+`images` count (`downloaded` / `remote` / `dropped`). The report `meta.render`
+block summarizes how many were rendered vs. fell back, and total images
+downloaded vs. left remote — surface this in your summary (e.g. "42 imported
+(40 rendered, 2 fetch-fallback), 130 images saved, 4 left remote").
+
 ## Flags
 
 `--vault`, `--folder`, `--inbox`, `--dry-run`, `--limit N`, `--retry-failed`,
-`--min-words N`, `--concurrency N`, `--rpc-url`, `--gateway`. Run the CLI with
+`--min-words N`, `--concurrency N`, `--rpc-url`, `--gateway`, `--no-render`,
+`--cdp-url`, `--render-concurrency N`, `--no-dismiss-consent`. Run the CLI with
 `--help` for the full list.
 
 ## Common mistakes
