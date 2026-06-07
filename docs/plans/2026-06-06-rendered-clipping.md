@@ -835,7 +835,7 @@ d('renderPage (live CDP smoke)', () => {
 Run: `npx vitest run`
 Expected: PASS, including `extract.equivalence`; `render.smoke` reported as skipped (no `RENDER_SMOKE`).
 
-- [ ] **Step 5 (optional, requires the gateway up): run the live smoke** — _not run: gateway Chrome was down (:9222 refused); run before Task 4._
+- [x] **Step 5 (optional, requires the gateway up): run the live smoke** — _ran 2026-06-07 as Task 6 Step 2: PASS (CDP connect + image capture + in-page Defuddle)._
 
 Run (PowerShell): `$env:RENDER_SMOKE=1; npx vitest run test/render.smoke.test.mjs; Remove-Item Env:RENDER_SMOKE`
 Expected: PASS. If it errors with a connection failure, start the gateway (`C:\Users\juliu\cbg-up.ps1`) and retry. Recommended before wiring Task 4.
@@ -1241,17 +1241,17 @@ git commit -m "docs: document CDP rendering, image capture, pick-the-better, new
 
 **Files:** none (verification only).
 
-- [ ] **Step 1: Confirm the gateway is up**
+- [x] **Step 1: Confirm the gateway is up**
 
 Run: `curl -sS http://localhost:3000/syncz`
 Expected: `{"ok":true}`. If not, run `C:\Users\juliu\cbg-up.ps1` and re-check.
 
-- [ ] **Step 2: Render-path smoke (live)**
+- [x] **Step 2: Render-path smoke (live)**
 
 Run (PowerShell): `$env:RENDER_SMOKE=1; npx vitest run test/render.smoke.test.mjs; Remove-Item Env:RENDER_SMOKE`
 Expected: PASS — confirms CDP connect + image-capture + in-page Defuddle work against this machine's Chrome.
 
-- [ ] **Step 3: Small real import into a throwaway inbox**
+- [x] **Step 3: Small real import into a throwaway inbox**
 
 Run:
 ```
@@ -1259,18 +1259,18 @@ node import.mjs --vault "C:\Users\juliu\Documents\AIEngineeringArticles" --folde
 ```
 Expected: per-item progress on stderr; JSON report on stdout with `meta.render.enabled: true`, most items `path: "rendered"`, non-zero `imagesDownloaded`, and a small/zero `imagesRemote`.
 
-- [ ] **Step 4: Eyeball the output quality**
+- [x] **Step 4: Eyeball the output quality**
 
 Open the 3 notes under `Clippings/_rendertest/` and the `_attachments/` folder. Verify against the original complaints:
 - body is complete (not a consent-wall/JS shell),
 - images are local `![[…]]` embeds that resolve in Obsidian (no broken/placeholder images, no leftover tracking pixels),
 - formatting (code, lists, quotes) reads cleanly; compare one note to the same URL clipped by the real Web Clipper if you have it.
 
-- [ ] **Step 5: Verify the fallback ladder (rendering off)**
+- [x] **Step 5: Verify the fallback ladder (rendering off)**
 
 Run the same import with `--no-render` into a second throwaway inbox and confirm `meta.render.enabled: false` and every item `path: "fetched-fallback"` — behaviour-identical to the old tool plus image harvest via node fetch.
 
-- [ ] **Step 6: Clean up the throwaway inboxes**
+- [x] **Step 6: Clean up the throwaway inboxes**
 
 Run (PowerShell):
 ```
@@ -1278,7 +1278,7 @@ Remove-Item -Recurse -Force "C:\Users\juliu\Documents\AIEngineeringArticles\Clip
 ```
 (and the `--no-render` test inbox).
 
-- [ ] **Step 7: Final full suite**
+- [x] **Step 7: Final full suite**
 
 Run: `npx vitest run`
 Expected: PASS, all suites (`render.smoke` skipped). No commit needed — verification only.
