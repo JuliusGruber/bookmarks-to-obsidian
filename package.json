@@ -15,8 +15,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "defuddle": "^0.6.0",
-    "jsdom": "^24.1.0"
+    "defuddle": "^0.18.1"
   },
   "devDependencies": {
     "vitest": "^2.1.0"
