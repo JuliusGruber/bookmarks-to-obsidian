@@ -52,3 +52,11 @@ git commit -m "subject line" -m "body paragraph one" -m "body paragraph two"
 Only use a here-string when you have matched the syntax to the tool: `@'…'@` in
 the **PowerShell** tool, or a POSIX heredoc (`git commit -F - <<'EOF' … EOF`)
 in the **Bash** tool.
+
+### Prefer the PowerShell tool for git in this repo
+
+This machine's interactive shell is PowerShell, so **run git commands through the
+PowerShell tool** to match the user's environment. Reserve the Bash tool for
+genuinely POSIX scripts (e.g. `*.sh` files, shebang scripts). Picking one shell
+deliberately — rather than drifting between them — is what prevents the
+syntax-mismatch class of bug described above.
