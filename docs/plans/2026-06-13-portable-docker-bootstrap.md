@@ -1,6 +1,6 @@
 # Portable auto-bootstrap Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Make the `chrome-bookmarks-gateway` dependency start itself from inside the `bookmarks-to-obsidian` skill on any OS the first time the skill is used, with a one-time consent prompt, and replace SKILL.md's hardcoded machine paths with per-user config.
 
@@ -71,7 +71,7 @@ Move the proxy that today lives at `C:\Users\juliu\cbg-cdp-proxy.cjs` into the s
 **Files:**
 - Create: `bookmarks-to-obsidian/cbg-cdp-proxy.cjs`
 
-- [ ] **Step 1: Create the bundled proxy**
+- [x] **Step 1: Create the bundled proxy**
 
 Create `bookmarks-to-obsidian/cbg-cdp-proxy.cjs` with exactly:
 
@@ -100,7 +100,7 @@ server.listen(LISTEN_PORT, '0.0.0.0', () => {
 });
 ```
 
-- [ ] **Step 2: Sanity-check it parses and binds**
+- [x] **Step 2: Sanity-check it parses and binds**
 
 Run from `bookmarks-to-obsidian/`:
 
@@ -112,7 +112,7 @@ node -e "require('./cbg-cdp-proxy.cjs')" & sleep 1; \
 
 Expected: prints `CDP proxy listening on 0.0.0.0:9223 -> 127.0.0.1:9222` then `listening OK`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add bookmarks-to-obsidian/cbg-cdp-proxy.cjs
@@ -129,7 +129,7 @@ Pure function. Decides whether the gateway is ready, up-but-not-signed-in, or do
 - Create: `bookmarks-to-obsidian/src/bootstrap/syncz.mjs`
 - Test: `bookmarks-to-obsidian/test/bootstrap.syncz.test.mjs`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `bookmarks-to-obsidian/test/bootstrap.syncz.test.mjs`:
 
@@ -165,12 +165,12 @@ describe('interpretSyncz', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run from `bookmarks-to-obsidian/`: `npx vitest run test/bootstrap.syncz.test.mjs`
 Expected: FAIL — `Failed to resolve import "../src/bootstrap/syncz.mjs"`.
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 Create `bookmarks-to-obsidian/src/bootstrap/syncz.mjs`:
 
@@ -190,12 +190,12 @@ export function interpretSyncz(status, body) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run test/bootstrap.syncz.test.mjs`
 Expected: PASS (6 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add bookmarks-to-obsidian/src/bootstrap/syncz.mjs bookmarks-to-obsidian/test/bootstrap.syncz.test.mjs
@@ -212,7 +212,7 @@ Pure functions. `findChromePath` returns the first existing Chrome/Chromium for 
 - Create: `bookmarks-to-obsidian/src/bootstrap/chrome.mjs`
 - Test: `bookmarks-to-obsidian/test/bootstrap.chrome.test.mjs`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `bookmarks-to-obsidian/test/bootstrap.chrome.test.mjs`:
 
@@ -283,12 +283,12 @@ describe('chromeArgs', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run test/bootstrap.chrome.test.mjs`
 Expected: FAIL — cannot resolve `../src/bootstrap/chrome.mjs`.
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 Create `bookmarks-to-obsidian/src/bootstrap/chrome.mjs`:
 
@@ -368,12 +368,12 @@ export function chromeArgs(profileDir) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run test/bootstrap.chrome.test.mjs`
 Expected: PASS (all describe blocks green).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add bookmarks-to-obsidian/src/bootstrap/chrome.mjs bookmarks-to-obsidian/test/bootstrap.chrome.test.mjs
@@ -390,7 +390,7 @@ git commit -m "feat(bootstrap): add cross-OS Chrome locator and launch args"
 - Create: `bookmarks-to-obsidian/src/bootstrap/docker.mjs`
 - Test: `bookmarks-to-obsidian/test/bootstrap.docker.test.mjs`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `bookmarks-to-obsidian/test/bootstrap.docker.test.mjs`:
 
@@ -438,12 +438,12 @@ describe('dockerRunArgs', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run test/bootstrap.docker.test.mjs`
 Expected: FAIL — cannot resolve `../src/bootstrap/docker.mjs`.
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 Create `bookmarks-to-obsidian/src/bootstrap/docker.mjs`:
 
@@ -488,12 +488,12 @@ export function isDaemonUp(run = spawnSync) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run test/bootstrap.docker.test.mjs`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add bookmarks-to-obsidian/src/bootstrap/docker.mjs bookmarks-to-obsidian/test/bootstrap.docker.test.mjs
@@ -510,7 +510,7 @@ Resolves the OS-appropriate config dir **outside** the skill, reads/writes `conf
 - Create: `bookmarks-to-obsidian/src/bootstrap/config.mjs`
 - Test: `bookmarks-to-obsidian/test/bootstrap.config.test.mjs`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `bookmarks-to-obsidian/test/bootstrap.config.test.mjs`:
 
@@ -580,12 +580,12 @@ describe('readConfig / writeConfig', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run test/bootstrap.config.test.mjs`
 Expected: FAIL — cannot resolve `../src/bootstrap/config.mjs`.
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 Create `bookmarks-to-obsidian/src/bootstrap/config.mjs`:
 
@@ -683,12 +683,12 @@ if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run test/bootstrap.config.test.mjs`
 Expected: PASS.
 
-- [ ] **Step 5: Verify the CLI round-trips end-to-end**
+- [x] **Step 5: Verify the CLI round-trips end-to-end**
 
 Run from `bookmarks-to-obsidian/`:
 
@@ -701,7 +701,7 @@ node src/bootstrap/config.mjs --get
 
 Expected: `--path` prints a `…/bookmarks-to-obsidian/config.json` path; `--get vault` prints `/tmp/test-vault`; `--get` prints the JSON with `vault` and `folder`. (This writes to your real config dir — delete the file afterward if you do not want the test value to persist: `node -e "const{configPath}=await import('./src/bootstrap/config.mjs');console.log(configPath())"` then remove it.)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add bookmarks-to-obsidian/src/bootstrap/config.mjs bookmarks-to-obsidian/test/bootstrap.config.test.mjs
@@ -718,7 +718,7 @@ Thin shell (it does real network I/O), used for cross-platform idempotency: if C
 - Create: `bookmarks-to-obsidian/src/bootstrap/probe.mjs`
 - Test: `bookmarks-to-obsidian/test/bootstrap.probe.test.mjs`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `bookmarks-to-obsidian/test/bootstrap.probe.test.mjs`:
 
@@ -754,12 +754,12 @@ describe('probeUrl', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run test/bootstrap.probe.test.mjs`
 Expected: FAIL — cannot resolve `../src/bootstrap/probe.mjs`.
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 Create `bookmarks-to-obsidian/src/bootstrap/probe.mjs`:
 
@@ -782,12 +782,12 @@ export async function probeUrl(url, { timeoutMs = 1500 } = {}) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run test/bootstrap.probe.test.mjs`
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add bookmarks-to-obsidian/src/bootstrap/probe.mjs bookmarks-to-obsidian/test/bootstrap.probe.test.mjs
@@ -803,7 +803,7 @@ Wires the pure modules together: consent gate → preflight → Chrome → proxy
 **Files:**
 - Create: `bookmarks-to-obsidian/bootstrap.mjs`
 
-- [ ] **Step 1: Write `bootstrap.mjs`**
+- [x] **Step 1: Write `bootstrap.mjs`**
 
 Create `bookmarks-to-obsidian/bootstrap.mjs`:
 
@@ -944,7 +944,7 @@ main().catch((e) => {
 });
 ```
 
-- [ ] **Step 2: Smoke-test the consent gate (no Docker/Chrome needed)**
+- [x] **Step 2: Smoke-test the consent gate (no Docker/Chrome needed)**
 
 The gate must fire before any preflight. Point the config dir at an empty temp location so `consentedAt` is absent:
 
@@ -964,7 +964,7 @@ $env:APPDATA = $tmp.FullName; node bootstrap.mjs; "exit=$LASTEXITCODE"
 
 Expected: `status: needs-consent`, `exit=3`.
 
-- [ ] **Step 3: Smoke-test the docker-unavailable branch**
+- [x] **Step 3: Smoke-test the docker-unavailable branch**
 
 Record consent in the temp config dir, then run with Docker stopped (or with `PATH` not containing docker) to confirm the daemon check short-circuits:
 
@@ -978,7 +978,7 @@ XDG_CONFIG_HOME="$CFG" PATH="/nonexistent" node bootstrap.mjs; echo "exit=$?"
 
 Expected: `{ "status": "docker-unavailable", … }`, `exit=0`. (If `node` itself is not on the stripped PATH on your system, instead stop Docker Desktop and run without the PATH override.)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add bookmarks-to-obsidian/bootstrap.mjs
@@ -994,7 +994,7 @@ Replace the machine-specific "Defaults (this machine)" + `cbg-up.ps1` workflow w
 **Files:**
 - Modify: `bookmarks-to-obsidian/SKILL.md` (replace lines for "Defaults (this machine)" and "Workflow"; add "Prerequisites" and "Configuration"; drop `cbg-up.ps1` from "Common mistakes" wording).
 
-- [ ] **Step 1: Replace the "Defaults (this machine)" section with Prerequisites + Configuration**
+- [x] **Step 1: Replace the "Defaults (this machine)" section with Prerequisites + Configuration**
 
 In `bookmarks-to-obsidian/SKILL.md`, replace this block:
 
@@ -1052,11 +1052,11 @@ validate it — the directory **must exist** (reject and re-ask if not); a missi
 `node bootstrap.mjs` from the skill's own folder — never a hardcoded absolute path.
 ```
 
-- [ ] **Step 2: Fill in the Apple-Silicon caveat from Task 1**
+- [x] **Step 2: Fill in the Apple-Silicon caveat from Task 1**
 
 Replace the `<FINDING FROM TASK 1 …>` placeholder with the actual finding recorded in Task 1, Step 2 — either the amd64-only sentence or delete the whole `> **Apple Silicon (arm64):** …` callout if the image is multi-arch. Do not leave the angle-bracket placeholder in the file.
 
-- [ ] **Step 3: Rewrite the Workflow section**
+- [x] **Step 3: Rewrite the Workflow section**
 
 Replace the existing `## Workflow` block (steps 1–5, including the `cbg-up.ps1` lines and the two hardcoded `node "C:\Users\juliu\…\import.mjs" …` commands) with:
 
@@ -1100,7 +1100,7 @@ Replace the existing `## Workflow` block (steps 1–5, including the `cbg-up.ps1
    the inbox, or clip a thin one manually in Safari/Web Clipper.
 ```
 
-- [ ] **Step 4: Drop the `cbg-up.ps1` reference from Common mistakes**
+- [x] **Step 4: Drop the `cbg-up.ps1` reference from Common mistakes**
 
 In the `## Common mistakes` section, replace the first bullet:
 
@@ -1114,7 +1114,7 @@ with:
 - Running with the gateway down → the CLI exits 2 with `{"error":"gateway-unreachable"|"gateway-not-synced"}`. Bring the stack up first via Workflow step 1 (`node bootstrap.mjs`); don't fabricate results.
 ```
 
-- [ ] **Step 5: Verify no stale references remain**
+- [x] **Step 5: Verify no stale references remain**
 
 Run from the repo root:
 
@@ -1124,7 +1124,7 @@ grep -rn "cbg-up.ps1\|C:\\\\Users\\\\juliu" bookmarks-to-obsidian/SKILL.md
 
 Expected: no matches (empty output). If anything prints, fix it before committing.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add bookmarks-to-obsidian/SKILL.md
@@ -1139,12 +1139,12 @@ The pure helpers are unit-tested; the imperative shell is verified by an actual 
 
 **Files:** none (verification only).
 
-- [ ] **Step 1: Run the entire test suite**
+- [x] **Step 1: Run the entire test suite**
 
 Run from `bookmarks-to-obsidian/`: `npm test`
 Expected: all suites pass — the pre-existing tests plus the five new `bootstrap.*` suites. Confirm the count went up by the new files and nothing regressed.
 
-- [ ] **Step 2: Real bootstrap run on this machine (Windows)**
+- [x] **Step 2: Real bootstrap run on this machine (Windows)**
 
 With Docker Desktop running, from `bookmarks-to-obsidian/`:
 
@@ -1155,12 +1155,12 @@ node bootstrap.mjs
 
 Expected: a JSON object with `chrome` `running`/`launched`, `proxy` `running`/`started`, `container` `started`, and `status` either `ready` (if the dedicated Chrome profile is already signed into Google sync) or `not-synced` (fresh profile — a Chrome window opened; this is the expected first-run state).
 
-- [ ] **Step 3: Confirm idempotency**
+- [x] **Step 3: Confirm idempotency**
 
 Run `node bootstrap.mjs` a second time.
 Expected: `chrome: "running"` and `proxy: "running"` (probes found them already up — no duplicate Chrome window opens), container re-created, same `status`. Confirm only one dedicated Chrome window exists.
 
-- [ ] **Step 4: If `not-synced`, complete the one manual step and re-verify**
+- [x] **Step 4: If `not-synced`, complete the one manual step and re-verify**
 
 Sign into Google and enable bookmark sync in the dedicated Chrome window, then:
 
@@ -1170,7 +1170,7 @@ curl -sS http://localhost:3000/syncz
 
 Expected: `{"ok":true}`. Re-run `node bootstrap.mjs` → `status: "ready"`.
 
-- [ ] **Step 5: End-to-end through the importer (unchanged CLI)**
+- [x] **Step 5: End-to-end through the importer (unchanged CLI)**
 
 Confirm the importer still drives the now-bootstrapped stack using config-supplied flags:
 
@@ -1181,7 +1181,7 @@ node import.mjs --vault "C:\\Users\\juliu\\Documents\\AIEngineeringArticles" --f
 
 Expected: a JSON report with the dry-run preview (rendered candidates, no notes written). This proves the bootstrap brought up exactly what the unchanged importer needs.
 
-- [ ] **Step 6: Final commit (if any verification fixes were needed)**
+- [x] **Step 6: Final commit (if any verification fixes were needed)**
 
 If Steps 1–5 surfaced fixes, commit them with a clear message; otherwise nothing to commit (verification only). The branch is now ready for the finishing-a-development-branch flow.
 
@@ -1245,3 +1245,36 @@ No mismatches found.
 **2. Inline Execution** — Execute tasks in this session using executing-plans, batch execution with checkpoints.
 
 **Which approach?**
+
+---
+
+## Execution Notes (2026-06-13)
+
+Executed inline on `main` (Windows / Docker Desktop). All 10 tasks complete; full
+suite green (102 passing, 2 skipped). Real run reached `ready` after the manual
+Google sign-in; the 3-item dry-run import drove the bootstrapped stack end-to-end
+(gateway listed 230 bookmarks, Chrome rendered 3 previews over CDP).
+
+Two deviations from the plan, both verified and committed:
+
+1. **`configPath` portability fix (Task 6).** The plan used `path.join`, which
+   emits `\` on Windows and so produced `\home\me\…` when called with the explicit
+   `'linux'` platform argument, failing the plan's own forward-slash test. Changed
+   `configPath` to append `config.json` with the separator for the *platform
+   argument* (matching how `resolveConfigDir` already builds its string), keeping
+   the pure resolver host-independent. Removed the now-unused `join` import.
+
+2. **`CHROME_CDP_URL` must be an IP literal, not a hostname (Tasks 5 & 8).** The
+   plan's `dockerRunArgs` default `http://host.docker.internal:9223` made the
+   gateway send `Host: host.docker.internal`, which Chrome's remote-debugging
+   endpoint rejects ("not an IP address or localhost" — DNS-rebinding guard), so
+   the container logged "CDP endpoint did not become ready" and exited 1. This is
+   internally inconsistent with the proxy's own comment, which assumes an IP-literal
+   Host. Fix (commit `918a862`): added pure `parseHostIp` + thin-shell
+   `resolveHostIp` to `docker.mjs` (probes a throwaway `busybox` container's
+   `/etc/hosts`, which `--add-host=host.docker.internal:host-gateway` populates with
+   the host-routable IP — Docker Desktop → `192.168.65.254`, native Linux → the
+   host-gateway IP); `bootstrap.mjs` now passes that IP as `http://<ip>:9223`.
+   Portable, no hardcoded IP, satisfies Chrome's allowlist. Added 6 `parseHostIp`
+   unit tests. The hostname default in `dockerRunArgs` is retained as a documented
+   fallback (pinned by the existing test) but `bootstrap.mjs` always overrides it.
