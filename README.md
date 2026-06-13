@@ -6,23 +6,42 @@ Chrome (CDP), runs Defuddle in the live DOM, and harvests the images the page
 loaded into the vault — also raw-fetching and keeping the better extraction when a
 render looks thin or like a consent/paywall shell.
 
-- **Operator guide:** see [`SKILL.md`](./SKILL.md) — this is what Claude reads.
-- **Engine:** `import.mjs` + `src/*.mjs` — a deterministic Node CLI (`node import.mjs --help`).
-- **Tests:** `npm test` (vitest unit + Defuddle fixture integration).
+The skill is the **[`bookmarks-to-obsidian/`](./bookmarks-to-obsidian)** folder —
+that's the copy-pastable unit you drop into your Claude skills directory (see
+[Install](#install)). Everything else here is repo scaffolding: this README, the
+`LICENSE`, and `docs/` (design notes).
 
-## Setup
+- **Operator guide:** [`bookmarks-to-obsidian/SKILL.md`](./bookmarks-to-obsidian/SKILL.md) — this is what Claude reads.
+- **Engine:** `bookmarks-to-obsidian/import.mjs` + `src/*.mjs` — a deterministic Node CLI (`node import.mjs --help`).
+- **Tests:** `npm test` from inside the skill folder (vitest unit + Defuddle fixture integration).
 
-```
+## Install
+
+The skill is a single folder. Copy `bookmarks-to-obsidian/` into your Claude Code
+skills directory and install its dependencies:
+
+```bash
+# Personal skill (all projects). For a project-scoped skill, use
+# <project>/.claude/skills/ instead of ~/.claude/skills/.
+git clone https://github.com/JuliusGruber/bookmarks-to-obsidian.git
+cp -r bookmarks-to-obsidian/bookmarks-to-obsidian ~/.claude/skills/bookmarks-to-obsidian
+cd ~/.claude/skills/bookmarks-to-obsidian
 npm install
 ```
 
-Requires Node 20+ and the local `chrome-bookmarks-gateway` running on
+On Windows the skills directory is `C:\Users\<you>\.claude\skills\`. Downloading the
+repo as a ZIP works too — just copy the **inner** `bookmarks-to-obsidian/` folder
+(not the `-main` wrapper GitHub adds), then run `npm install` inside it. Claude
+discovers the skill from the `SKILL.md` frontmatter, so keep the folder named
+`bookmarks-to-obsidian`.
+
+Requirements: Node 20+ and the local `chrome-bookmarks-gateway` running on
 `http://localhost:3000` (its dedicated Chrome, with CDP on `http://localhost:9222`,
-doubles as the rendering engine). Dependencies: `defuddle` (extraction; bundles
-`linkedom` for node-side parsing), `puppeteer-core` (CDP render + image capture,
-connect-only — no bundled browser), and `image-size` (tracking-pixel filtering).
-If `node_modules/` is missing (e.g.
-after copying the skill to a new machine), re-run `npm install` from this directory.
+doubles as the rendering engine). Dependencies pulled by `npm install`: `defuddle`
+(extraction; bundles `linkedom` for node-side parsing), `puppeteer-core` (CDP
+render + image capture, connect-only — no bundled browser), and `image-size`
+(tracking-pixel filtering). `node_modules/` is not committed, so re-run
+`npm install` whenever you copy the folder to a new machine.
 
 ## Design
 
