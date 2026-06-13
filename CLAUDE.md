@@ -30,6 +30,13 @@ Whenever you (or a skill such as `superpowers:writing-plans` /
 root `specs/` or `plans/` folder following the naming above — never into a
 skill-specific or `docs/`-nested subfolder.
 
+## Git workflow — commit directly to `main`
+
+This is a single-maintainer repository. **Commit directly to `main` and push to
+`origin/main`.** Do not create feature branches, git worktrees, or pull requests
+for changes here — this deliberately overrides the default "branch first when on
+the default branch" behavior.
+
 ## Git commit messages — shell syntax
 
 This is a Windows repo with two shells available: PowerShell **and** the Bash
