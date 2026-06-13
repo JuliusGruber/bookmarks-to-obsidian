@@ -22,12 +22,44 @@ it, and summarizes the JSON report.
 - "import my AI bookmarks", "sync bookmarks to obsidian", "pull new bookmarks into the vault"
 - **Not** for editing/searching bookmarks (use `chrome-bookmarks-gateway`) or one-off single-URL clips.
 
-## Defaults (this machine)
+## Prerequisites
 
-- Tool: `C:\Users\juliu\.claude\skills\bookmarks-to-obsidian\import.mjs`
-- Vault: `C:\Users\juliu\Documents\AIEngineeringArticles`
-- Folder: `Mobile Lesezeichen/AI` (the iPad-reading home; ~197 links)
-- Destination: `Clippings/` inside the vault — the Obsidian Web Clipper's own folder (created on first import). Override with `--inbox <subpath>`.
+The skill brings its own dependency stack up (see Workflow step 1), but four
+things cannot be scripted and must exist first — the bootstrap detects each and
+tells the user what to do:
+
+- **Docker installed and running.** A skill cannot install Docker Desktop or
+  start its daemon. Bootstrap reports `docker-unavailable` when it is down.
+- **Chrome or Chromium installed.** Bootstrap reports `chrome-not-found` when no
+  browser is located. (Set `CBG_CHROME`/`CHROME_PATH` to point at a non-standard
+  install.)
+- **One-time Google sign-in + bookmark sync** in the dedicated Chrome window the
+  bootstrap opens. Until done, `/syncz` returns `503` (`not-synced`). This is the
+  single irreducible manual step on every fresh machine.
+- **Internet for the first image pull** of `pvoronin/chrome-bookmarks-gateway:0.3.0`.
+
+> **Apple Silicon (arm64):** the pinned gateway image is amd64-only; on Apple
+> Silicon it runs under Docker Desktop's emulation (slower but functional).
+
+## Configuration
+
+All per-user values live in `config.json` in an OS config dir **outside** the
+skill (`%APPDATA%\bookmarks-to-obsidian\` on Windows; `$XDG_CONFIG_HOME` or
+`~/.config/bookmarks-to-obsidian/` on macOS/Linux), so re-copying the skill never
+wipes them. Read/write it via the bundled CLI, run from the skill folder:
+
+- `node src/bootstrap/config.mjs --get` — print the full config.
+- `node src/bootstrap/config.mjs --set vault=<path>` — set the vault.
+- `node src/bootstrap/config.mjs --consent` — record consent (stamps `consentedAt`).
+
+Fields: `vault` (Obsidian vault root), `folder` (default `Mobile Lesezeichen/AI`),
+`inbox` (default `Clippings`), `consentedAt`.
+
+**First use:** if `vault` is unset, ask the user for their Obsidian vault path and
+validate it — the directory **must exist** (reject and re-ask if not); a missing
+`.obsidian/` folder is a soft warning that does not block. On success,
+`--set vault=<path>`. Tool paths are skill-relative: invoke `node import.mjs` and
+`node bootstrap.mjs` from the skill's own folder — never a hardcoded absolute path.
 
 ## Rendering & images
 
@@ -55,19 +87,41 @@ it, and summarizes the JSON report.
 
 ## Workflow
 
-1. **Health check** the gateway: `curl -sS http://localhost:3000/syncz` → expect `{"ok":true}`.
-   - No connection → tell the user to run `C:\Users\juliu\cbg-up.ps1` (offer it; do **not** launch Chrome silently). Re-check after.
-   - `503` → Chrome profile not synced; same fix.
-2. **First run / when unsure → dry-run first** so the user can eyeball quality:
+1. **Health-check, then self-bootstrap if down.** Run all commands from the
+   skill's own folder.
+   - Health check: `curl -sS http://localhost:3000/syncz` → expect `{"ok":true}`.
+   - **If it answers `{"ok":true}`** → the stack is up; go to step 2.
+   - **If it is unreachable or returns `503`** → bring the stack up:
+     1. **Consent.** Read `node src/bootstrap/config.mjs --get`. If `consentedAt`
+        is absent, explain once — bootstrap will *launch a dedicated Chrome,
+        start a local CDP proxy, and run a Docker container, binding ports
+        3000 / 9222 / 9223* — and ask permission. On **yes**:
+        `node src/bootstrap/config.mjs --consent`. On no, stop.
+     2. **Bootstrap:** `node bootstrap.mjs`. It prints one JSON object; parse its
+        `status` and branch:
+        - `needs-consent` → consent was not recorded; do the consent step, retry.
+        - `docker-unavailable` → tell the user to install/start Docker Desktop; stop.
+        - `chrome-not-found` → tell the user to install Chrome/Chromium (or set
+          `CBG_CHROME`); stop.
+        - `not-synced` → tell the user to sign into Google **and enable bookmark
+          sync** in the dedicated Chrome window the bootstrap opened (the one
+          manual step); re-check `/syncz` after they confirm.
+        - `down` → the stack did not come up; surface the JSON and stop.
+        - `ready` → proceed.
+2. **First run / when unsure → dry-run first** so the user can eyeball quality.
+   Read `vault`/`folder` from config (`--get`) and pass them as flags:
    ```
-   node "C:\Users\juliu\.claude\skills\bookmarks-to-obsidian\import.mjs" --vault "C:\Users\juliu\Documents\AIEngineeringArticles" --folder "Mobile Lesezeichen/AI" --dry-run --limit 10
+   node import.mjs --vault "<config.vault>" --folder "<config.folder, default Mobile Lesezeichen/AI>" --dry-run --limit 10
    ```
 3. **Real import** (writes notes) — drop `--dry-run`; omit `--limit` for the full backfill:
    ```
-   node "C:\Users\juliu\.claude\skills\bookmarks-to-obsidian\import.mjs" --vault "C:\Users\juliu\Documents\AIEngineeringArticles" --folder "Mobile Lesezeichen/AI"
+   node import.mjs --vault "<config.vault>" --folder "<config.folder>"
    ```
-4. **Parse** the JSON report on stdout and **summarize** in prose: imported N → inbox, plus skipped/failed counts. List the `skipped-thin` and `failed` items for manual triage. Never paste the raw JSON at the user.
-5. **Offer next**: `--retry-failed` (re-attempts `failed` + `skipped-thin`), open the inbox, or clip a thin one manually in Safari/Web Clipper.
+4. **Parse** the JSON report on stdout and **summarize** in prose: imported N →
+   inbox, plus skipped/failed counts. List the `skipped-thin` and `failed` items
+   for manual triage. Never paste the raw JSON at the user.
+5. **Offer next**: `--retry-failed` (re-attempts `failed` + `skipped-thin`), open
+   the inbox, or clip a thin one manually in Safari/Web Clipper.
 
 ## Report statuses
 
@@ -95,7 +149,7 @@ downloaded vs. left remote — surface this in your summary (e.g. "42 imported
 
 ## Common mistakes
 
-- Running with the gateway down → the CLI exits 2 with `{"error":"gateway-unreachable"|"gateway-not-synced"}`. Start the gateway first; don't fabricate results.
+- Running with the gateway down → the CLI exits 2 with `{"error":"gateway-unreachable"|"gateway-not-synced"}`. Bring the stack up first via Workflow step 1 (`node bootstrap.mjs`); don't fabricate results.
 - A bare `--folder "AI"` is **ambiguous** (an AI folder exists on the bar *and* under Mobile bookmarks) — the CLI errors with both paths. Use the full path `Mobile Lesezeichen/AI`.
 - A real import mutates the vault. For an unfamiliar vault state, dry-run first (step 2) before writing.
 - Transient `failed` (e.g. HTTP 429) is normal for rate-limited hosts; re-run later with `--retry-failed`.
