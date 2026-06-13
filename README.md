@@ -23,9 +23,3 @@ doubles as the rendering engine). Dependencies: `defuddle` (extraction; bundles
 connect-only — no bundled browser), and `image-size` (tracking-pixel filtering).
 If `node_modules/` is missing (e.g.
 after copying the skill to a new machine), re-run `npm install` from this directory.
-
-## Design
-
-Built from `docs-fork/2026-06-04-bookmark-to-obsidian-design.md`. Packaged as a
-single self-contained skill (rather than a separate repo) so it stays decoupled
-from the AI-Engineering-Coach fork while still being unit-testable and cron-able.
