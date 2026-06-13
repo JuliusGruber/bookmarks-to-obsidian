@@ -38,7 +38,7 @@ This is the spec's mandated first step. It produces a finding that feeds the SKI
 
 **Files:** none (investigation only).
 
-- [ ] **Step 1: Inspect the published architectures of the pinned image**
+- [x] **Step 1: Inspect the published architectures of the pinned image**
 
 Run (Docker must be running):
 
@@ -52,13 +52,15 @@ If `docker manifest inspect` is disabled in your Docker config, use:
 docker buildx imagetools inspect pvoronin/chrome-bookmarks-gateway:0.3.0
 ```
 
-- [ ] **Step 2: Record the finding**
+- [x] **Step 2: Record the finding**
 
 Read the `architecture` fields in the output.
 - If `arm64` (linux/arm64) **is** present → the image is multi-arch; no caveat needed. Note "multi-arch, arm64 native" for Task 9.
 - If only `amd64` (linux/amd64) is present → the image is amd64-only; on Apple Silicon it runs under Docker Desktop's emulation (slower) or may fail. Note "amd64-only — Apple Silicon runs under emulation" for Task 9.
 
 Write the one-line finding into the scratch area of your task tracker (it is consumed verbatim by Task 9, Step 1). No commit.
+
+> **FINDING (2026-06-13):** `docker manifest inspect pvoronin/chrome-bookmarks-gateway:0.3.0` lists only `linux/amd64` (plus an `unknown/unknown` attestation manifest); no `linux/arm64`. The image is **amd64-only — Apple Silicon runs under emulation**. Task 9, Step 2 keeps the caveat: "the pinned gateway image is amd64-only; on Apple Silicon it runs under Docker Desktop's emulation (slower but functional)."
 
 ---
 
