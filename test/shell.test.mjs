@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { looksLikeShell } from '../scripts/src/shell.mjs';
+import { looksLikeShell } from '../bookmarks-to-obsidian/scripts/src/shell.mjs';
 
 describe('looksLikeShell', () => {
   it('passes a normal long article with an incidental cookie mention', () => {

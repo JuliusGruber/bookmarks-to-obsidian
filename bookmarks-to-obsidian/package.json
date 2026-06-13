@@ -10,16 +10,11 @@
     "bookmarks-to-obsidian": "./scripts/import.mjs"
   },
   "scripts": {
-    "import": "node scripts/import.mjs",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "import": "node scripts/import.mjs"
   },
   "dependencies": {
     "defuddle": "^0.18.1",
     "image-size": "^2.0.0",
     "puppeteer-core": "^23.0.0"
-  },
-  "devDependencies": {
-    "vitest": "^2.1.0"
   }
 }

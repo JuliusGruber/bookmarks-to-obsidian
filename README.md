@@ -9,7 +9,8 @@ after a single consent prompt. No manual setup scripts.
 
 The skill is the **[`bookmarks-to-obsidian/`](./bookmarks-to-obsidian)** folder —
 that's the copy-pastable unit you drop into your Claude skills directory.
-Everything else in this repo is scaffolding (this README, `LICENSE`, `docs/`).
+Everything else in this repo is scaffolding that never ships: this README,
+`LICENSE`, the root-level `test/` suite, and the `specs/` and `plans/` folders.
 
 ## Requirements
 
@@ -87,13 +88,13 @@ folder:
 
 ```bash
 # preview (renders, writes nothing)
-node import.mjs --vault "/path/to/Vault" --folder "Mobile Lesezeichen/AI" --dry-run --limit 10
+node scripts/import.mjs --vault "/path/to/Vault" --folder "Mobile Lesezeichen/AI" --dry-run --limit 10
 
 # real import (writes notes; omit --limit for the full backlog)
-node import.mjs --vault "/path/to/Vault" --folder "Mobile Lesezeichen/AI"
+node scripts/import.mjs --vault "/path/to/Vault" --folder "Mobile Lesezeichen/AI"
 
 # every flag
-node import.mjs --help
+node scripts/import.mjs --help
 ```
 
 `--folder` is the Chrome bookmark folder to import (use the full path if the name
@@ -111,10 +112,10 @@ re-copying the skill never wipes them:
 Read or change it with the bundled CLI (run from the skill folder):
 
 ```bash
-node src/bootstrap/config.mjs --get                       # show current config
-node src/bootstrap/config.mjs --set vault="/path/to/Vault"
-node src/bootstrap/config.mjs --set folder="Mobile Lesezeichen/AI"
-node src/bootstrap/config.mjs --path                      # print the config file location
+node scripts/src/bootstrap/config.mjs --get                       # show current config
+node scripts/src/bootstrap/config.mjs --set vault="/path/to/Vault"
+node scripts/src/bootstrap/config.mjs --set folder="Mobile Lesezeichen/AI"
+node scripts/src/bootstrap/config.mjs --path                      # print the config file location
 ```
 
 Fields: `vault` (your Obsidian vault root), `folder` (bookmark folder to import),
@@ -130,9 +131,47 @@ If a run can't start, the bootstrap reports a status that tells you what to fix:
 | `docker-unavailable` | Docker isn't running — start Docker Desktop and retry. |
 | `chrome-not-found` | No Chrome/Chromium found — install one, or set `CBG_CHROME` to its path. |
 | `not-synced` | The gateway is up but the dedicated Chrome isn't signed in — sign into Google and enable bookmark sync in that window. |
-| `needs-consent` | Permission wasn't recorded yet — approve the one-time prompt, or run `node src/bootstrap/config.mjs --consent`. |
+| `needs-consent` | Permission wasn't recorded yet — approve the one-time prompt, or run `node scripts/src/bootstrap/config.mjs --consent`. |
 | `down` | The stack didn't come up — check Docker, and that ports `3000` / `9222` / `9223` are free. |
 | `ready` | Everything's up — imports will run. |
+
+## Development
+
+This repository is a thin wrapper around the distributable skill. The skill — the
+only thing users copy or that gets packaged into a `.skill` — is the
+self-contained [`bookmarks-to-obsidian/`](./bookmarks-to-obsidian) folder, whose
+`package.json` declares **runtime dependencies only**. The **test suite lives in
+[`test/`](./test) at the repo root, deliberately *outside* the skill folder**, so
+it never ships to users. The outer `package.json` is the dev/test harness: it
+pulls in `vitest` plus the skill's runtime deps (via a `file:` dependency on the
+skill folder, so there's a single source of truth for versions).
+
+```bash
+npm install   # at the repo root — vitest + the skill's runtime deps
+npm test      # runs the suite against bookmarks-to-obsidian/scripts/src
+```
+
+### Building a distributable `.skill`
+
+The skill is published as a single `.skill` file — a zip of the
+`bookmarks-to-obsidian/` folder — built with Anthropic's official packager from
+the `skill-creator` plugin. It validates `SKILL.md` and excludes `node_modules/`
+automatically; output lands in `dist/` (gitignored). Needs Python with PyYAML
+(`pip install pyyaml`).
+
+```powershell
+$repo = "$env:USERPROFILE\IdeaProjects\bookmarks-to-obsidian-skill"
+# $sc = wherever the skill-creator plugin is installed locally:
+$sc = "$env:USERPROFILE\.claude\plugins\marketplaces\claude-plugins-official\plugins\skill-creator\skills\skill-creator"
+$env:PYTHONUTF8 = "1"   # Windows: the packager prints emoji — avoids a cp1252 crash
+Push-Location $sc
+python -m scripts.package_skill "$repo\bookmarks-to-obsidian" "$repo\dist"
+Pop-Location
+```
+
+`node_modules/` is **not** in the archive, so after installing the `.skill` the
+recipient runs `npm install` inside the extracted skill folder once (same
+runtime-only install as under [Install](#install)).
 
 ## License
 

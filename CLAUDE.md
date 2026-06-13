@@ -30,6 +30,25 @@ Whenever you (or a skill such as `superpowers:writing-plans` /
 root `specs/` or `plans/` folder following the naming above — never into a
 skill-specific or `docs/`-nested subfolder.
 
+## Tests live at the repo root, outside the skill folder
+
+The distributable skill is the self-contained `bookmarks-to-obsidian/` folder —
+the only thing users copy and the only thing packaged into a `.skill`. To keep
+that folder shippable, **dev artifacts must not live inside it**:
+
+- The **test suite** lives in the root-level `test/` folder and imports the code
+  under test from `../bookmarks-to-obsidian/scripts/src/`. Never put tests,
+  fixtures, `vitest`, or other dev tooling inside `bookmarks-to-obsidian/`.
+- The **skill's own `package.json`** declares **runtime dependencies only** (no
+  `devDependencies`, no test scripts).
+- The **root `package.json`** is the dev/test harness: it depends on `vitest` and
+  on the skill folder itself via a `file:` dependency, so the skill's runtime
+  deps resolve during tests from a single source of truth. Run `npm install` then
+  `npm test` at the repo root.
+
+When packaging a `.skill`, only the `bookmarks-to-obsidian/` folder ships;
+`node_modules/` is excluded and the root harness stays behind.
+
 ## Git workflow — commit directly to `main`
 
 This is a single-maintainer repository. **Commit directly to `main` and push to

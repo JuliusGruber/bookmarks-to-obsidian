@@ -1,0 +1,17 @@
+{
+  "name": "bookmarks-to-obsidian-skill",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Dev/test harness for the bookmarks-to-obsidian skill. The distributable skill is the self-contained ./bookmarks-to-obsidian folder; this outer project holds only the test suite and tooling, which never ship.",
+  "license": "MIT",
+  "author": "Julius Gruber",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.0",
+    "bookmarks-to-obsidian": "file:./bookmarks-to-obsidian"
+  }
+}

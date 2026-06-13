@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildReport } from '../scripts/src/report.mjs';
+import { buildReport } from '../bookmarks-to-obsidian/scripts/src/report.mjs';
 
 describe('buildReport', () => {
   it('aggregates per-status counts and echoes the items', () => {
