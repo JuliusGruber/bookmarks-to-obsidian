@@ -541,7 +541,7 @@ git commit -m "feat(import): add --list, --import-ids, --decline-ids, --reset-de
 
 `--reset-declined` is a pure local manifest op: no gateway, no folder. It short-circuits before the gateway health check.
 
-- [ ] **Step 1: Add the `classify.mjs` import**
+- [x] **Step 1: Add the `classify.mjs` import**
 
 After the existing `import { reconcile } from './src/reconcile.mjs';` line, add:
 
@@ -557,7 +557,7 @@ import {
 
 (Only `clearDeclined` is used in this task; the others are wired in Tasks 5–6.)
 
-- [ ] **Step 2: Insert the reset short-circuit**
+- [x] **Step 2: Insert the reset short-circuit**
 
 In `main()`, the required-args checks currently read:
 
@@ -589,7 +589,7 @@ Replace that pair with:
   if (!opts.folder) fail('missing-folder', 'Pass --folder "<name or path>".');
 ```
 
-- [ ] **Step 3: Verify the CLI loads**
+- [x] **Step 3: Verify the CLI loads**
 
 Run: `node --check bookmarks-to-obsidian/scripts/import.mjs`
 Expected: no output (syntax OK).
@@ -597,7 +597,7 @@ Expected: no output (syntax OK).
 Run: `node bookmarks-to-obsidian/scripts/import.mjs --help`
 Expected: usage prints, no runtime error from the import.
 
-- [ ] **Step 4: Verify the reset path end-to-end against a throwaway manifest**
+- [x] **Step 4: Verify the reset path end-to-end against a throwaway manifest**
 
 The reset path touches no gateway, so it can be exercised directly. Run:
 
@@ -613,12 +613,12 @@ node bookmarks-to-obsidian/scripts/import.mjs --reset-declined --vault "<that pa
 
 Expected: prints `{ "mode": "reset-declined", "cleared": 1, ... }`. A second run prints `"cleared": 0` (idempotent no-op). Delete the temp dir afterward.
 
-- [ ] **Step 5: Verify the suite is still green**
+- [x] **Step 5: Verify the suite is still green**
 
 Run: `npm test`
 Expected: PASS (no test imports `import.mjs`; the new `import` line resolves).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```sh
 git add bookmarks-to-obsidian/scripts/import.mjs
