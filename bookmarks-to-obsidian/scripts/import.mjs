@@ -28,6 +28,13 @@ import { downloadImages } from './src/images.mjs';
 import { looksLikeShell } from './src/shell.mjs';
 import { fingerprint } from './src/fingerprint.mjs';
 import { reconcile } from './src/reconcile.mjs';
+import {
+  classifyBookmarks,
+  buildListPayload,
+  partitionIds,
+  buildDeclineEntries,
+  clearDeclined,
+} from './src/classify.mjs';
 
 const HELP = `bookmarks-to-obsidian — import Chrome bookmarks into an Obsidian vault.
 
@@ -153,6 +160,22 @@ async function main() {
     return;
   }
   if (!opts.vault) fail('missing-vault', 'Pass --vault <path>.');
+
+  // --reset-declined: pure local manifest op — no gateway, no folder required.
+  if (opts.resetDeclined) {
+    const vaultAbs0 = isAbsolute(opts.vault) ? opts.vault : resolve(opts.vault);
+    const manifestPath0 = join(vaultAbs0, opts.inbox, '.import-state.json');
+    const manifest0 = await readManifest(manifestPath0);
+    const { cleared } = clearDeclined(manifest0);
+    if (cleared) await writeManifest(manifestPath0, manifest0);
+    process.stdout.write(`${JSON.stringify({
+      mode: 'reset-declined',
+      cleared,
+      meta: { vault: vaultAbs0, inbox: opts.inbox, generatedAt: todayISO() },
+    }, null, 2)}\n`);
+    return;
+  }
+
   if (!opts.folder) fail('missing-folder', 'Pass --folder "<name or path>".');
 
   const vaultAbs = isAbsolute(opts.vault) ? opts.vault : resolve(opts.vault);
