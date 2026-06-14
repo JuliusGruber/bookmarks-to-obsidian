@@ -477,7 +477,7 @@ git commit -m "feat(classify): list payload, id partition, decline + reset helpe
 **Files:**
 - Modify: `bookmarks-to-obsidian/scripts/import.mjs:32-56` (HELP), `:58-104` (parseArgs + a new `parseIdList` helper)
 
-- [ ] **Step 1: Add the flags to the HELP text**
+- [x] **Step 1: Add the flags to the HELP text**
 
 In the `HELP` template, under `Options:`, add these four lines immediately after the `--retry-failed` line:
 
@@ -488,7 +488,7 @@ In the `HELP` template, under `Options:`, add these four lines immediately after
   --reset-declined       Remove every declined manifest entry, report the count, and exit.
 ```
 
-- [ ] **Step 2: Add the defaults to the `opts` object**
+- [x] **Step 2: Add the defaults to the `opts` object**
 
 In `parseArgs`, add four fields to the `opts` literal, immediately after `retryFailed: false,`:
 
@@ -499,7 +499,7 @@ In `parseArgs`, add four fields to the `opts` literal, immediately after `retryF
     resetDeclined: false,
 ```
 
-- [ ] **Step 3: Add the parse cases**
+- [x] **Step 3: Add the parse cases**
 
 In the `switch (a)` block, add four cases immediately after the `case '--retry-failed':` line:
 
@@ -510,7 +510,7 @@ In the `switch (a)` block, add four cases immediately after the `case '--retry-f
       case '--reset-declined': opts.resetDeclined = true; break;
 ```
 
-- [ ] **Step 4: Add the `parseIdList` helper**
+- [x] **Step 4: Add the `parseIdList` helper**
 
 Immediately after the `parseArgs` function (before `function todayISO()`), add:
 
@@ -520,12 +520,12 @@ function parseIdList(s) {
 }
 ```
 
-- [ ] **Step 5: Verify the CLI loads and help shows the flags**
+- [x] **Step 5: Verify the CLI loads and help shows the flags**
 
 Run: `node bookmarks-to-obsidian/scripts/import.mjs --help`
 Expected: usage prints, including the four new option lines. No error.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```sh
 git add bookmarks-to-obsidian/scripts/import.mjs
