@@ -5,6 +5,7 @@ import {
   bodyHash,
   simhash,
   hamming,
+  fingerprint,
 } from '../bookmarks-to-obsidian/scripts/src/fingerprint.mjs';
 
 describe('titleKey', () => {
@@ -117,5 +118,22 @@ describe('simhash + hamming', () => {
     const a = simhash(normalizeBody(ARTICLE));
     const c = simhash(normalizeBody(DIFFERENT));
     expect(hamming(a, c)).toBeGreaterThan(6);
+  });
+});
+
+describe('fingerprint', () => {
+  it('returns the title key, body hash, simhash and normalized word count', () => {
+    const fp = fingerprint('Loop Engineering', 'Hello brave new world.');
+    expect(fp.titleKey).toBe(titleKey('Loop Engineering'));
+    expect(fp.bodyHash).toBe(bodyHash(normalizeBody('Hello brave new world.')));
+    expect(fp.simhash).toBe(simhash(normalizeBody('Hello brave new world.')));
+    expect(fp.wordCount).toBe(4);
+  });
+
+  it('fingerprints the same article identically before and after image rewrite', () => {
+    const remote = fingerprint('A', 'Intro.\n\n![x](https://cdn/x.png)\n\nOutro body text here.');
+    const local = fingerprint('A', 'Intro.\n\n![[A-01.png]]\n\nOutro body text here.');
+    expect(remote.bodyHash).toBe(local.bodyHash);
+    expect(remote.simhash).toBe(local.simhash);
   });
 });

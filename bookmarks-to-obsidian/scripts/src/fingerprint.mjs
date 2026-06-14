@@ -84,3 +84,18 @@ export function hamming(a, b) {
   }
   return dist;
 }
+
+/**
+ * Shared by the vault scan and the extract stage: fingerprint a note's title +
+ * markdown into { titleKey, bodyHash, simhash, wordCount }. wordCount is over the
+ * normalized body (so it is comparable across renders).
+ */
+export function fingerprint(title, markdown) {
+  const body = normalizeBody(markdown);
+  return {
+    titleKey: titleKey(title),
+    bodyHash: bodyHash(body),
+    simhash: simhash(body),
+    wordCount: body ? body.split(' ').length : 0,
+  };
+}
