@@ -43,7 +43,7 @@
 - Create: `bookmarks-to-obsidian/scripts/src/fingerprint.mjs`
 - Test: `test/fingerprint.test.mjs`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `test/fingerprint.test.mjs`:
 
@@ -114,12 +114,12 @@ describe('bodyHash', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run test/fingerprint.test.mjs`
 Expected: FAIL — `Failed to resolve import` / `titleKey is not a function` (module does not exist yet).
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 Create `bookmarks-to-obsidian/scripts/src/fingerprint.mjs`:
 
@@ -163,12 +163,12 @@ export function bodyHash(normalizedBody) {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `npx vitest run test/fingerprint.test.mjs`
 Expected: PASS (all `titleKey`, `normalizeBody`, `bodyHash` cases green).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```sh
 git add bookmarks-to-obsidian/scripts/src/fingerprint.mjs test/fingerprint.test.mjs
