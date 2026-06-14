@@ -422,6 +422,13 @@ async function main() {
     },
     generatedAt: created,
   };
+  report.meta.dedup = {
+    enabled: opts.contentDedup,
+    distance: opts.dupDistance,
+    skippedExact: outcomes.filter((o) => o && o.status === 'skipped-duplicate' && o.reason === 'exact content').length,
+    skippedNear: outcomes.filter((o) => o && o.status === 'skipped-duplicate' && /^near-duplicate/.test(o.reason || '')).length,
+    flagged: outcomes.filter((o) => o && o.status === 'imported' && o.possibleDuplicateOf).length,
+  };
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 }
 
