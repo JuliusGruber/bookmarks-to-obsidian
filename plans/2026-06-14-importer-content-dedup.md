@@ -992,7 +992,7 @@ git commit -m "feat(dedup): scanVault builds a content index from titles+bodies"
 **Files:**
 - Modify: `bookmarks-to-obsidian/scripts/import.mjs:30-96` (HELP + parseArgs)
 
-- [ ] **Step 1: Add the flags to the HELP text**
+- [x] **Step 1: Add the flags to the HELP text**
 
 In the `HELP` template, under `Options:`, add these two lines after the `--min-words` line:
 
@@ -1001,7 +1001,7 @@ In the `HELP` template, under `Options:`, add these two lines after the `--min-w
   --no-content-dedup     Disable content dedup (URL dedup only; no fingerprinting).
 ```
 
-- [ ] **Step 2: Add the defaults to the `opts` object**
+- [x] **Step 2: Add the defaults to the `opts` object**
 
 In `parseArgs`, add two fields to the `opts` literal (e.g. after `minWords: 200,`):
 
@@ -1010,7 +1010,7 @@ In `parseArgs`, add two fields to the `opts` literal (e.g. after `minWords: 200,
     contentDedup: true,
 ```
 
-- [ ] **Step 3: Add the parse cases**
+- [x] **Step 3: Add the parse cases**
 
 In the `switch (a)` block, add two cases (e.g. after the `--min-words` case):
 
@@ -1019,12 +1019,16 @@ In the `switch (a)` block, add two cases (e.g. after the `--min-words` case):
       case '--no-content-dedup': opts.contentDedup = false; break;
 ```
 
-- [ ] **Step 4: Verify the CLI loads and help shows the flags**
+- [x] **Step 4: Verify the CLI loads and help shows the flags**
 
 Run: `node bookmarks-to-obsidian/scripts/import.mjs --help`
 Expected: usage prints, including the two new option lines. No error.
 
-- [ ] **Step 5: Commit**
+> Note: `node --check` passes (syntax of the flag edits is valid). The runtime
+> `--help` load is blocked by the Task 7 transient (`import.mjs` still imports the
+> renamed `scanVaultSources`) and prints cleanly once **Task 9** swaps the import.
+
+- [x] **Step 5: Commit**
 
 ```sh
 git add bookmarks-to-obsidian/scripts/import.mjs
