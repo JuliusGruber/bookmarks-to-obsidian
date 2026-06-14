@@ -120,6 +120,10 @@ validate it — the directory **must exist** (reject and re-ask if not); a missi
 4. **Parse** the JSON report on stdout and **summarize** in prose: imported N →
    inbox, plus skipped/failed counts. List the `skipped-thin` and `failed` items
    for manual triage. Never paste the raw JSON at the user.
+   Also surface `meta.dedup`: e.g. "3 collapsed as duplicates — 2 exact, 1 near —
+   and 1 flagged for review". List any items carrying `possibleDuplicateOf` (a
+   title clash with distinct content, imported with a ` (2)` filename) so the user
+   can eyeball them.
 5. **Offer next**: `--retry-failed` (re-attempts `failed` + `skipped-thin`), open
    the inbox, or clip a thin one manually in Safari/Web Clipper.
 
@@ -131,6 +135,7 @@ validate it — the directory **must exist** (reject and re-ask if not); a missi
 | `skipped-existing` | URL already in the vault or import manifest |
 | `skipped-thin` | wordCount below `--min-words` (video / SPA / paywall) |
 | `skipped-binary` | non-HTML content type (PDF, image) |
+| `skipped-duplicate` | a new note whose content matches one already in the vault/run; not written (`duplicateOf` points at the canonical note) |
 | `failed` | fetch error (HTTP/DNS/timeout); retry with `--retry-failed` |
 | `skipped-limit` | a new bookmark held back by `--limit` this run |
 
@@ -144,8 +149,10 @@ downloaded vs. left remote — surface this in your summary (e.g. "42 imported
 
 `--vault`, `--folder`, `--inbox`, `--dry-run`, `--limit N`, `--retry-failed`,
 `--min-words N`, `--concurrency N`, `--rpc-url`, `--gateway`, `--no-render`,
-`--cdp-url`, `--render-concurrency N`, `--no-dismiss-consent`. Run the CLI with
-`--help` for the full list.
+`--cdp-url`, `--render-concurrency N`, `--no-dismiss-consent`, `--dup-distance N`,
+`--no-content-dedup`. Run the CLI with `--help` for the full list.
+`--dup-distance N` tunes the near-duplicate SimHash threshold (default 6);
+`--no-content-dedup` turns the content layer off, leaving URL dedup only.
 
 ## Common mistakes
 
