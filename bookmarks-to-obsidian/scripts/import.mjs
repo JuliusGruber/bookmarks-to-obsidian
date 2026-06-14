@@ -202,6 +202,21 @@ async function main() {
     return;
   }
 
+  // --list: read-only classification. URL-only scan (skip the unused content index).
+  if (opts.list) {
+    const { urls: vaultSet } = await scanVault(vaultAbs, { content: false });
+    const manifest = await readManifest(manifestPath);
+    const classification = classifyBookmarks(bookmarks, { vaultSet, manifest, retryFailed: opts.retryFailed });
+    process.stdout.write(`${JSON.stringify(buildListPayload(classification, {
+      folder: folderName,
+      folderSpec: opts.folder,
+      vault: vaultAbs,
+      inbox: opts.inbox,
+      generatedAt: created,
+    }), null, 2)}\n`);
+    return;
+  }
+
   // 3. Dedup state: vault scan (truth) + manifest (provenance/fast path).
   const { urls: vaultSet, content: contentIndex } = await scanVault(vaultAbs, { content: opts.contentDedup });
   const manifest = await readManifest(manifestPath);
