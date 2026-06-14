@@ -1042,7 +1042,7 @@ git commit -m "feat(import): add --dup-distance and --no-content-dedup flags" -m
 **Files:**
 - Modify: `bookmarks-to-obsidian/scripts/import.mjs:19-24` (imports), `:159` (scan call), `:186-189` (remembered path)
 
-- [ ] **Step 1: Swap the dedup import**
+- [x] **Step 1: Swap the dedup import**
 
 Replace the `dedup.mjs` import block:
 
@@ -1055,7 +1055,7 @@ import {
 } from './src/dedup.mjs';
 ```
 
-- [ ] **Step 2: Use `scanVault` and keep the content index**
+- [x] **Step 2: Use `scanVault` and keep the content index**
 
 Replace the step-3 scan line:
 
@@ -1065,7 +1065,7 @@ Replace the step-3 scan line:
 
 (`vaultSet.has(norm)` in step 4 keeps working unchanged; `contentIndex` is unused until Task 10.)
 
-- [ ] **Step 3: Carry `duplicateOf` through the remembered path**
+- [x] **Step 3: Carry `duplicateOf` through the remembered path**
 
 In step 4, the remembered branch currently pushes `{ url, title, status, reason: 'remembered', file: m.file }`. Replace that push with one that preserves a remembered duplicate pointer:
 
@@ -1076,7 +1076,7 @@ In step 4, the remembered branch currently pushes `{ url, title, status, reason:
 
 (`m.duplicateOf` is `undefined` for non-duplicate entries — harmless.)
 
-- [ ] **Step 4: Verify the CLI still parses/loads**
+- [x] **Step 4: Verify the CLI still parses/loads**
 
 Run: `node --check bookmarks-to-obsidian/scripts/import.mjs`
 Expected: no output (syntax OK).
@@ -1084,12 +1084,12 @@ Expected: no output (syntax OK).
 Run: `node bookmarks-to-obsidian/scripts/import.mjs --help`
 Expected: usage prints, no runtime error from the import swap.
 
-- [ ] **Step 5: Verify the suite is still green**
+- [x] **Step 5: Verify the suite is still green**
 
 Run: `npm test`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```sh
 git add bookmarks-to-obsidian/scripts/import.mjs
