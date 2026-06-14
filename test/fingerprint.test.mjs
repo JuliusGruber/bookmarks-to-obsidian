@@ -3,6 +3,8 @@ import {
   titleKey,
   normalizeBody,
   bodyHash,
+  simhash,
+  hamming,
 } from '../bookmarks-to-obsidian/scripts/src/fingerprint.mjs';
 
 describe('titleKey', () => {
@@ -60,5 +62,60 @@ describe('bodyHash', () => {
 
   it('returns SHA-1 hex (40 chars)', () => {
     expect(bodyHash('x')).toMatch(/^[0-9a-f]{40}$/);
+  });
+});
+
+// A real-prose article, a boilerplate-varied copy (one extra line), and a
+// genuinely different post. Kept long so shared 3-grams dominate the SimHash.
+const ARTICLE = `
+Loop engineering is the practice of designing feedback loops that keep an agent on task.
+A good loop has three parts: a goal, an observation step, and a correction step.
+When the agent drifts away from the plan, the correction step nudges it back toward the goal.
+The art is choosing how tight the loop should be. Too tight and the agent thrashes on noise.
+Too loose and it wanders off for many steps before anyone notices the problem.
+Most production systems settle somewhere in the middle, trimming the loop over time
+as they learn which signals actually predict drift and which are just random noise.
+`;
+
+const ARTICLE_REPOST = `
+Subscribe to my newsletter for a weekly post like this one.
+Loop engineering is the practice of designing feedback loops that keep an agent on task.
+A good loop has three parts: a goal, an observation step, and a correction step.
+When the agent drifts away from the plan, the correction step nudges it back toward the goal.
+The art is choosing how tight the loop should be. Too tight and the agent thrashes on noise.
+Too loose and it wanders off for many steps before anyone notices the problem.
+Most production systems settle somewhere in the middle, trimming the loop over time
+as they learn which signals actually predict drift and which are just random noise.
+`;
+
+const DIFFERENT = `
+Yesterday I went hiking in the mountains and saw three deer near the rocky ridge.
+The weather was cold but clear, and the narrow trail was covered in fresh white snow.
+We packed sandwiches and a thermos of coffee and stopped at the summit for a long lunch.
+On the way back down a sudden storm rolled in, so we hurried back toward the parked car.
+It was a long and tiring day but worth every single step for the view from the very top.
+`;
+
+describe('simhash + hamming', () => {
+  it('returns a 16-char hex string (64-bit) for any body', () => {
+    expect(simhash(normalizeBody(ARTICLE))).toMatch(/^[0-9a-f]{16}$/);
+    expect(simhash('')).toMatch(/^[0-9a-f]{16}$/);
+  });
+
+  it('has zero distance from itself', () => {
+    const s = simhash(normalizeBody(ARTICLE));
+    expect(hamming(s, s)).toBe(0);
+  });
+
+  it('keeps boilerplate-varied copies of one article within the near threshold (<= 6)', () => {
+    const a = simhash(normalizeBody(ARTICLE));
+    const b = simhash(normalizeBody(ARTICLE_REPOST));
+    expect(hamming(a, b)).toBeLessThanOrEqual(6);
+  });
+
+  it('puts two distinct same-titled articles well above the threshold (> 6)', () => {
+    const a = simhash(normalizeBody(ARTICLE));
+    const c = simhash(normalizeBody(DIFFERENT));
+    expect(hamming(a, c)).toBeGreaterThan(6);
   });
 });
