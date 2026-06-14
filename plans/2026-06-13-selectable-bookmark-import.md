@@ -271,7 +271,7 @@ git commit -m "feat(classify): pure classifyBookmarks (new vs decided vs decline
 - Modify: `bookmarks-to-obsidian/scripts/src/classify.mjs`
 - Test: `test/classify.helpers.test.mjs`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `test/classify.helpers.test.mjs`:
 
@@ -375,12 +375,12 @@ describe('clearDeclined', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run test/classify.helpers.test.mjs`
 Expected: FAIL — `buildListPayload is not a function` (only `classifyBookmarks` is exported so far).
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 Append to `bookmarks-to-obsidian/scripts/src/classify.mjs`:
 
@@ -458,12 +458,12 @@ export function clearDeclined(manifest) {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `npx vitest run test/classify.helpers.test.mjs`
 Expected: PASS (payload shape, import-wins, decline entries + unknown ids, clear-declined all green).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```sh
 git add bookmarks-to-obsidian/scripts/src/classify.mjs test/classify.helpers.test.mjs
