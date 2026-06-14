@@ -15,7 +15,7 @@ import { join, isAbsolute, resolve } from 'node:path';
 import { checkGateway, getTree, findFolder, collectBookmarks } from './src/gateway.mjs';
 import { fetchPage, extractFromHtml } from './src/extract.mjs';
 import { splitAuthors, normalizeDate, buildFrontmatter } from './src/frontmatter.mjs';
-import { sanitizeFilename, uniqueFilename, writeNoteFile } from './src/note.mjs';
+import { writeNoteFile } from './src/note.mjs';
 import {
   normalizeUrl,
   scanVault,
@@ -26,6 +26,8 @@ import { buildReport } from './src/report.mjs';
 import { connectBrowser, renderPage } from './src/render.mjs';
 import { downloadImages } from './src/images.mjs';
 import { looksLikeShell } from './src/shell.mjs';
+import { fingerprint } from './src/fingerprint.mjs';
+import { reconcile } from './src/reconcile.mjs';
 
 const HELP = `bookmarks-to-obsidian — import Chrome bookmarks into an Obsidian vault.
 
@@ -225,41 +227,39 @@ async function main() {
     try { for (const n of await readdir(attachDir)) attachTaken.add(n); } catch { /* none yet */ }
   }
 
-  // 6. Render → pick-the-better-vs-fetch → harvest images → write.
+  // 6. Phase A: EXTRACT (parallel) → pick winner → fingerprint. Terminal
+  //    failures (failed / binary / thin) settle straight into the report here.
   const poolSize = browser ? opts.renderConcurrency : opts.concurrency;
-  let done = 0;
+  const candidates = [];
+  let settled = 0;
 
   await mapPool(within, poolSize, async ({ bm, norm, slot }) => {
     let host = '';
     try { host = new URL(bm.url).host; } catch { /* keep '' */ }
 
-    // --- 1. Render candidate (markdown + rendered-DOM metadata + captured bytes). ---
-    let rendered = null;   // { markdown, wordCount, meta, images, shell }
+    // --- 1. Render candidate. ---
+    let rendered = null;
     if (browser) {
       const r = await renderPage(browser, bm.url, {
         navTimeoutMs: 25000,
         dismissConsent: opts.dismissConsent,
       });
       if (r.status === 'ok') {
-        // r.content is already markdown, converted in-page (preserves inline images
-        // that a node re-parse of the cleaned fragment would drop — see render.mjs).
         const md = r.content || '';
         rendered = {
           markdown: md,
           wordCount: r.wordCount || 0,
-          meta: r,                 // rendered-DOM metadata
-          images: r.images,        // Map<url,{bytes,contentType}> from the live page
+          meta: r,
+          images: r.images,
           shell: looksLikeShell(md, { minWords: opts.minWords }),
         };
       }
-      // render-failed → rendered stays null → fetch below.
     }
-
     const renderGood = rendered && rendered.wordCount >= opts.minWords && !rendered.shell;
 
     // --- 2. Fetch candidate, only when the render isn't already good. ---
-    let fetched = null;       // { markdown, wordCount, meta, shell }
-    let fetchOutcome = null;  // terminal fetch status when there is no usable body
+    let fetched = null;
+    let fetchOutcome = null;
     if (!renderGood) {
       const f = await fetchPage(bm.url, { timeoutMs: 20000 });
       if (f.status === 'ok') {
@@ -272,32 +272,30 @@ async function main() {
           shell: looksLikeShell(md, { minWords: opts.minWords }),
         };
       } else {
-        fetchOutcome = f; // { status: 'failed' | 'skipped-binary', reason }
+        fetchOutcome = f;
       }
     }
 
     // --- 3. Pick the better: disqualify shell/thin, longest wins, render breaks ties. ---
-    const candidates = [];
-    if (rendered) candidates.push({ ...rendered, path: 'rendered' });
-    if (fetched) candidates.push({ ...fetched, path: 'fetched-fallback' });
-    const qualified = candidates.filter((c) => c.wordCount >= opts.minWords && !c.shell);
+    const cands = [];
+    if (rendered) cands.push({ ...rendered, path: 'rendered' });
+    if (fetched) cands.push({ ...fetched, path: 'fetched-fallback' });
+    const qualified = cands.filter((c) => c.wordCount >= opts.minWords && !c.shell);
     qualified.sort((a, b) => (b.wordCount - a.wordCount) || (a.path === 'rendered' ? -1 : 1));
     const winner = qualified[0] || null;
 
     if (!winner) {
-      // Nothing usable. Prefer a terminal fetch status (failed/binary) when we have
-      // one; otherwise report thin against whichever candidate we did get.
-      done += 1;
+      settled += 1;
       if (fetchOutcome && fetchOutcome.status === 'failed') {
         outcomes[slot] = { url: bm.url, title: bm.title, status: 'failed', reason: fetchOutcome.reason, path: 'fetched-fallback' };
         manifest[norm] = { bookmarkId: bm.id, status: 'failed', reason: fetchOutcome.reason, at: created };
-        process.stderr.write(`[${done}/${within.length}] failed  ${bm.title || host}\n`);
+        process.stderr.write(`[A ${settled}/${within.length}] failed  ${bm.title || host}\n`);
         return;
       }
       if (fetchOutcome && fetchOutcome.status === 'skipped-binary') {
         outcomes[slot] = { url: bm.url, title: bm.title, status: 'skipped-binary', reason: fetchOutcome.reason, path: 'fetched-fallback' };
         manifest[norm] = { bookmarkId: bm.id, status: 'skipped-binary', reason: fetchOutcome.reason, at: created };
-        process.stderr.write(`[${done}/${within.length}] binary  ${bm.title || host}\n`);
+        process.stderr.write(`[A ${settled}/${within.length}] binary  ${bm.title || host}\n`);
         return;
       }
       const wc = (rendered && rendered.wordCount) || (fetched && fetched.wordCount) || 0;
@@ -305,61 +303,98 @@ async function main() {
       const path = rendered ? 'rendered' : 'fetched-fallback';
       outcomes[slot] = { url: bm.url, title: bm.title, status: 'skipped-thin', reason, path };
       manifest[norm] = { bookmarkId: bm.id, status: 'skipped-thin', reason, at: created };
-      process.stderr.write(`[${done}/${within.length}] thin    ${bm.title || host}\n`);
+      process.stderr.write(`[A ${settled}/${within.length}] thin    ${bm.title || host}\n`);
       return;
     }
 
-    let markdown = winner.markdown;
-    const wordCount = winner.wordCount;
-    const metaSource = winner.meta;
-    const pathTaken = winner.path;
-    const capturedBytes = winner.path === 'rendered' ? winner.images : new Map();
+    // Winner: fingerprint it (skipped when content dedup is off) and queue it.
+    const title = (winner.meta && winner.meta.title) || bm.title || host || 'untitled';
+    candidates.push({
+      bm,
+      norm,
+      slot,
+      title,
+      markdown: winner.markdown,
+      wordCount: winner.wordCount,
+      metaSource: winner.meta,
+      pathTaken: winner.path,
+      capturedBytes: winner.path === 'rendered' ? winner.images : new Map(),
+      fingerprint: opts.contentDedup ? fingerprint(title, winner.markdown) : null,
+    });
+  });
 
-    // --- 4. Title + filename (disambiguated against existing notes). ---
-    const title = (metaSource && metaSource.title) || bm.title || host || 'untitled';
-    const base = sanitizeFilename(title);
-    const filename = uniqueFilename(base, '.md', (n) => existingNames.has(n));
-    existingNames.add(filename);
+  // 6b. RECONCILE (serial, slot order): classify each candidate against the index.
+  const decisions = reconcile(candidates, contentIndex, {
+    distance: opts.dupDistance,
+    existingNames,
+    dedup: opts.contentDedup,
+  });
+  const accepted = decisions.filter((d) => d.action === 'accept');
 
-    // --- 5. Harvest images (real runs only). Slug = disambiguated filename so the
-    //        attachment names trace to THIS note and never collide cross-run. ---
+  // Auto-skipped duplicates settle into the report + manifest (no note, no images).
+  for (const d of decisions) {
+    if (d.action !== 'skip') continue;
+    const { candidate: c, verdict } = d;
+    const reason = verdict.verdict === 'exact'
+      ? 'exact content'
+      : `near-duplicate (dist ${verdict.distance})`;
+    outcomes[c.slot] = { url: c.bm.url, title: c.title, status: 'skipped-duplicate', reason, duplicateOf: verdict.duplicateOf };
+    manifest[c.norm] = { bookmarkId: c.bm.id, status: 'skipped-duplicate', reason, duplicateOf: verdict.duplicateOf, at: created };
+    process.stderr.write(`dup ${verdict.verdict.padEnd(5)} ${c.title} -> ${verdict.duplicateOf}\n`);
+  }
+
+  // 6c. Phase B: WRITE (parallel) — download images → write note → manifest entry.
+  let written = 0;
+  await mapPool(accepted, poolSize, async (d) => {
+    const { candidate: c, filename, verdict } = d;
+    let markdown = c.markdown;
+
     let images = { downloaded: 0, remote: 0, dropped: 0 };
     if (!opts.dryRun) {
       images = await downloadImages(markdown, {
-        baseUrl: bm.url,
+        baseUrl: c.bm.url,
         slug: filename.replace(/\.md$/i, ''),
         attachDir,
-        capturedBytes,
+        capturedBytes: c.capturedBytes,
         takenNames: attachTaken,
       });
       markdown = images.markdown;
     }
 
-    // --- 6. Assemble + write the note. ---
     const body = buildFrontmatter({
-      title,
-      source: bm.url,
-      authors: splitAuthors(metaSource && metaSource.author),
-      published: normalizeDate(metaSource && metaSource.published),
-      description: (metaSource && metaSource.description) || '',
+      title: c.title,
+      source: c.bm.url,
+      authors: splitAuthors(c.metaSource && c.metaSource.author),
+      published: normalizeDate(c.metaSource && c.metaSource.published),
+      description: (c.metaSource && c.metaSource.description) || '',
       created,
     }) + `\n${markdown}\n`;
 
     if (!opts.dryRun) await writeNoteFile(join(inboxAbs, filename), body);
 
-    done += 1;
-    outcomes[slot] = {
-      url: bm.url,
-      title,
+    written += 1;
+    const possibleDuplicateOf = verdict.verdict === 'flag' ? verdict.possibleDuplicateOf : undefined;
+    outcomes[c.slot] = {
+      url: c.bm.url,
+      title: c.title,
       status: 'imported',
       file: filename,
-      wordCount,
-      path: pathTaken,
+      wordCount: c.wordCount,
+      path: c.pathTaken,
       images: { downloaded: images.downloaded, remote: images.remote, dropped: images.dropped },
+      possibleDuplicateOf,
       dryRun: opts.dryRun || undefined,
     };
-    manifest[norm] = { bookmarkId: bm.id, status: 'imported', file: filename, at: created };
-    process.stderr.write(`[${done}/${within.length}] ${pathTaken === 'rendered' ? 'render ' : 'fetch  '} ${title}\n`);
+    manifest[c.norm] = {
+      bookmarkId: c.bm.id,
+      status: 'imported',
+      file: filename,
+      ...(c.fingerprint
+        ? { titleKey: c.fingerprint.titleKey, bodyHash: c.fingerprint.bodyHash, simhash: c.fingerprint.simhash, wordCount: c.wordCount }
+        : {}),
+      at: created,
+    };
+    process.stderr.write(`[B ${written}/${accepted.length}] ${c.pathTaken === 'rendered' ? 'render ' : 'fetch  '} ${c.title}\n`);
   });
 
   if (browser) { try { await browser.disconnect(); } catch { /* ignore */ } }
