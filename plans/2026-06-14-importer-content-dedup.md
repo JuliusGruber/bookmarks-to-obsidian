@@ -822,7 +822,7 @@ git commit -m "feat(report): add skipped-duplicate status bucket" -m "The summar
 - Modify: `bookmarks-to-obsidian/scripts/src/dedup.mjs:1-2,53-90`
 - Test: `test/dedup.scan.test.mjs`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `test/dedup.scan.test.mjs`:
 
@@ -879,12 +879,12 @@ describe('scanVault', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run test/dedup.scan.test.mjs`
 Expected: FAIL — `scanVault` is not exported (only `scanVaultSources` exists).
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 In `bookmarks-to-obsidian/scripts/src/dedup.mjs`, add imports under the existing import line:
 
@@ -968,17 +968,17 @@ async function readNoteFields(file) {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `npx vitest run test/dedup.scan.test.mjs`
 Expected: PASS (URL collection, recursion, and `{ content: false }` all green).
 
-- [ ] **Step 5: Verify the whole suite still passes**
+- [x] **Step 5: Verify the whole suite still passes**
 
 Run: `npm test`
 Expected: PASS. (`url.test.mjs` imports only `normalizeUrl`, which is unchanged.)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```sh
 git add bookmarks-to-obsidian/scripts/src/dedup.mjs test/dedup.scan.test.mjs
