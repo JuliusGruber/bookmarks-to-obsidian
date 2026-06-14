@@ -1367,7 +1367,7 @@ git commit -m "feat(import): report meta.dedup counts" -m "meta.dedup carries { 
 **Files:**
 - Modify: `bookmarks-to-obsidian/SKILL.md` — Report statuses table, Flags, Workflow step 4.
 
-- [ ] **Step 1: Add the status row**
+- [x] **Step 1: Add the status row**
 
 In the **Report statuses** table, add a row after the `skipped-binary` row:
 
@@ -1375,7 +1375,7 @@ In the **Report statuses** table, add a row after the `skipped-binary` row:
 | `skipped-duplicate` | a new note whose content matches one already in the vault/run; not written (`duplicateOf` points at the canonical note) |
 ```
 
-- [ ] **Step 2: Document the flags**
+- [x] **Step 2: Document the flags**
 
 In the **Flags** paragraph, add `--dup-distance N` and `--no-content-dedup` to the list, and append a sentence:
 
@@ -1384,7 +1384,7 @@ In the **Flags** paragraph, add `--dup-distance N` and `--no-content-dedup` to t
 `--no-content-dedup` turns the content layer off, leaving URL dedup only.
 ```
 
-- [ ] **Step 3: Update Workflow step 4 (summarize)**
+- [x] **Step 3: Update Workflow step 4 (summarize)**
 
 Extend Workflow step 4 so the operator surfaces dedup results. Append to that step:
 
@@ -1395,14 +1395,14 @@ title clash with distinct content, imported with a ` (2)` filename) so the user
 can eyeball them.
 ```
 
-- [ ] **Step 4: Verify the skill still ships clean (no dev artifacts leaked in)**
+- [x] **Step 4: Verify the skill still ships clean (no dev artifacts leaked in)**
 
 Run: `npx vitest run` (sanity — docs change shouldn't affect tests)
 Expected: PASS.
 
 Visually confirm `bookmarks-to-obsidian/SKILL.md` reads correctly and the table/flags render.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```sh
 git add bookmarks-to-obsidian/SKILL.md
