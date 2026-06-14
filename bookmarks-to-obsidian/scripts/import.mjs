@@ -18,7 +18,7 @@ import { splitAuthors, normalizeDate, buildFrontmatter } from './src/frontmatter
 import { sanitizeFilename, uniqueFilename, writeNoteFile } from './src/note.mjs';
 import {
   normalizeUrl,
-  scanVaultSources,
+  scanVault,
   readManifest,
   writeManifest,
 } from './src/dedup.mjs';
@@ -162,7 +162,7 @@ async function main() {
   }
 
   // 3. Dedup state: vault scan (truth) + manifest (provenance/fast path).
-  const vaultSet = await scanVaultSources(vaultAbs);
+  const { urls: vaultSet, content: contentIndex } = await scanVault(vaultAbs, { content: opts.contentDedup });
   const manifest = await readManifest(manifestPath);
   let existingNames = new Set();
   try {
@@ -191,7 +191,7 @@ async function main() {
     const retryable = m && (m.status === 'failed' || m.status === 'skipped-thin');
     if (m && !(opts.retryFailed && retryable)) {
       const status = m.status === 'imported' ? 'skipped-existing' : m.status;
-      outcomes.push({ url: bm.url, title: bm.title, status, reason: 'remembered', file: m.file });
+      outcomes.push({ url: bm.url, title: bm.title, status, reason: 'remembered', file: m.file, duplicateOf: m.duplicateOf });
       continue;
     }
     outcomes.push({ url: bm.url, title: bm.title, status: 'pending' });
