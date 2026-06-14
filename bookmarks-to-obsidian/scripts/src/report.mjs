@@ -5,6 +5,7 @@ export const STATUSES = [
   'skipped-existing',
   'skipped-thin',
   'skipped-binary',
+  'skipped-duplicate',
   'failed',
 ];
 

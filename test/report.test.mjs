@@ -10,17 +10,19 @@ describe('buildReport', () => {
       { url: 'https://d', status: 'skipped-thin', reason: 'wordCount 12 < 200' },
       { url: 'https://e', status: 'skipped-binary', reason: 'application/pdf' },
       { url: 'https://f', status: 'failed', reason: 'HTTP 404' },
+      { url: 'https://g', status: 'skipped-duplicate', reason: 'exact content', duplicateOf: 'A.md' },
     ];
     const report = buildReport(items);
     expect(report.summary).toEqual({
-      total: 6,
+      total: 7,
       imported: 2,
       'skipped-existing': 1,
       'skipped-thin': 1,
       'skipped-binary': 1,
+      'skipped-duplicate': 1,
       failed: 1,
     });
-    expect(report.items).toHaveLength(6);
+    expect(report.items).toHaveLength(7);
   });
 
   it('always reports the full set of status buckets, even at zero', () => {
@@ -31,6 +33,7 @@ describe('buildReport', () => {
       'skipped-existing': 0,
       'skipped-thin': 0,
       'skipped-binary': 0,
+      'skipped-duplicate': 0,
       failed: 0,
     });
   });
