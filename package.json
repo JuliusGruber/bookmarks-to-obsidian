@@ -9,10 +9,12 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "vendor": "cd bookmarks-to-obsidian && npm ci --omit=dev"
+    "vendor": "cd bookmarks-to-obsidian && npm ci --omit=dev",
+    "package": "node scripts/package-skill.mjs"
   },
   "devDependencies": {
     "vitest": "^2.1.0",
-    "bookmarks-to-obsidian": "file:./bookmarks-to-obsidian"
+    "archiver": "^7.0.1",
+    "defuddle": "^0.18.1"
   }
 }
