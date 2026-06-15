@@ -31,25 +31,25 @@ Plus an internet connection on the first run to pull the gateway image.
 
 ## Install
 
-The skill is a single folder. Copy `bookmarks-to-obsidian/` into your Claude Code
-skills directory and install its dependencies:
+The skill is a single, self-contained folder — copy it in and start using it. No
+`npm install`, no build step: its dependencies ship inside the folder.
 
 ```bash
 git clone https://github.com/JuliusGruber/bookmarks-to-obsidian-skill.git
 cp -r bookmarks-to-obsidian-skill/bookmarks-to-obsidian ~/.claude/skills/bookmarks-to-obsidian
-cd ~/.claude/skills/bookmarks-to-obsidian
-npm install
 ```
+
+Then ask Claude to import your bookmarks — that's it.
 
 - **Personal skill (all projects):** use `~/.claude/skills/` as shown. For a
   **project-scoped** skill, copy into `<project>/.claude/skills/` instead.
 - **Windows:** the skills directory is `C:\Users\<you>\.claude\skills\`.
 - **ZIP download** works too — copy the **inner** `bookmarks-to-obsidian/` folder
-  (not the `-main` wrapper GitHub adds), then run `npm install` inside it.
+  (not the `-main` wrapper GitHub adds). Nothing to install afterward.
 
 Keep the folder named `bookmarks-to-obsidian` — Claude discovers the skill from
-its `SKILL.md`. `node_modules/` isn't committed, so re-run `npm install` whenever
-you copy the folder to a new machine.
+its `SKILL.md`. The folder is copy-and-run: its `node_modules/` ships with it, so
+moving it to a new machine needs no `npm install`.
 
 ## Usage
 
@@ -153,25 +153,36 @@ npm test      # runs the suite against bookmarks-to-obsidian/scripts/src
 
 ### Building a distributable `.skill`
 
-The skill is published as a single `.skill` file — a zip of the
-`bookmarks-to-obsidian/` folder — built with Anthropic's official packager from
-the `skill-creator` plugin. It validates `SKILL.md` and excludes `node_modules/`
-automatically; output lands in `dist/` (gitignored). Needs Python with PyYAML
-(`pip install pyyaml`).
+The skill can also be published as a single `.skill` file — a zip of the
+`bookmarks-to-obsidian/` folder. Anthropic's official packager strips
+`node_modules/`, which would force recipients to run `npm install`; this repo
+ships its own packager that **includes** the vendored `node_modules/`, so the
+archive is copy-and-run too. Build it from the repo root:
 
-```powershell
-$repo = "$env:USERPROFILE\IdeaProjects\bookmarks-to-obsidian-skill"
-# $sc = wherever the skill-creator plugin is installed locally:
-$sc = "$env:USERPROFILE\.claude\plugins\marketplaces\claude-plugins-official\plugins\skill-creator\skills\skill-creator"
-$env:PYTHONUTF8 = "1"   # Windows: the packager prints emoji — avoids a cp1252 crash
-Push-Location $sc
-python -m scripts.package_skill "$repo\bookmarks-to-obsidian" "$repo\dist"
-Pop-Location
+```bash
+npm install      # once — installs the dev/test harness, including the packager
+npm run package  # writes dist/bookmarks-to-obsidian.skill (gitignored)
 ```
 
-`node_modules/` is **not** in the archive, so after installing the `.skill` the
-recipient runs `npm install` inside the extracted skill folder once (same
-runtime-only install as under [Install](#install)).
+The archive contains `node_modules/`, so a recipient unzips it into their skills
+directory and uses it immediately — **no `npm install`**.
+
+#### Re-vendoring after a dependency bump
+
+The skill's `node_modules/` is committed. After changing a dependency in
+`bookmarks-to-obsidian/package.json` (and its `package-lock.json`), refresh the
+committed tree:
+
+```bash
+npm run vendor                            # = (cd bookmarks-to-obsidian && npm ci --omit=dev)
+git add bookmarks-to-obsidian/node_modules
+```
+
+Use `--omit=dev` only — **not** `--omit=optional`. `defuddle/node` loads
+`linkedom` and `turndown` from `optionalDependencies` at runtime, so omitting
+optionals would break CLI startup and real extraction. The tree is pure
+JavaScript (no package compiles native code), so a tree vendored on one OS runs
+on every OS.
 
 ## License
 
