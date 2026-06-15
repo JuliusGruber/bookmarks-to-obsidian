@@ -1,4 +1,4 @@
-node_modules/
+/node_modules/
 *.log
 
 # Build output: packaged .skill artifacts
